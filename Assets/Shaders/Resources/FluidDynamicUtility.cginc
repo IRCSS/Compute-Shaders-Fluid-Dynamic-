@@ -3,20 +3,15 @@
 
 // -------------------------------------------------------------------------------------------------------------------------------------
 
-// Globals that need to be defined before this include is added
+// Globals that need to be defined before this include is added, these are in FluidDynamicCommonUniforms
 
-// int i_Resolution
+// uint i_Resolution
 
 // Convert the x,y texture like coordinate to the one dimensional array which is the structured buffer
-#define id2Dto1D(x, y) (x + (y * i_Resolution))
-
-
-void set_bound_x(int2 id) 
-{
-    if(id.x != )
-}
+#define id2Dto1D(xy) (xy.x + (xy.y * i_Resolution.x)).x
 
 
 // -------------------------------------------------------------------------------------------------------------------------------------
 
-
+#endif
+ 
