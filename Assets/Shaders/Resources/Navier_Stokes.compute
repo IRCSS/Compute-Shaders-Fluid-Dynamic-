@@ -1,0 +1,62 @@
+﻿// This file contains the Navier Stokes equation. The Navier Stokes equation are of the form:
+// new_Divergent_vector_field = advection + diffusion + external_forces
+
+
+//____________________________________________________________________________________
+// KERNELS
+
+#pragma kernel advection
+
+
+//____________________________________________________________________________________
+// COMMON DECLERNATIONS
+
+#include "FluidDynamicCommonUniforms.cginc"
+
+
+//____________________________________________________________________________________
+// HELPER FUNCTIONS
+
+#include "FluidDynamicUtility.cginc"
+
+//____________________________________________________________________________________
+// MAIN FUNCTIONS
+
+// ADVECTION DECLERNATIONS
+
+float                      _dissipationFactor;
+
+StructuredBuffer<float4>   _velocity_field_buffer;
+StructuredBuffer<float4>   _field_to_advect_buffer;
+
+RWStructuredBuffer<float4> _new_advected_field;
+
+//----------------------------------------------------------------------------
+// Function         : Advection
+// Description      : Advection is the part of the equation that is responsible for carrying
+//                    things along the fluid field. This can be head, densities or even the 
+//                    the velocity of the fluid itself. It works by tracing backwards from each fragment
+//                    along the velocity field, and moving the passive value at its destination
+//                    forward to the starting point.It performs bilinear interpolation at the
+//                    destination to get a smooth resulting field. It also clamps the velocities
+//                    on the bounderies.
+//----------------------------------------------------------------------------
+
+[numthreads(16,16,1)]                                                       // Runs once per simulation grid
+void advection(uint3 id : SV_DispatchThreadID)                              
+{                                                                           
+    uint2  coord = id.xy;                                                   // One to one mapping between the dispatch ids and the coordinate
+    
+    float2 advection_source_coord = coord -                                 // Trace backwards along trajectory
+                                  i_timeStep *                              // distance = velocity * time, this is the time part 
+                                  _velocity_field_buffer[id2Dto1D(coord)] * // This is the velocity part
+                                  (1. / i_Resolution) ;                     // The speed is in the unite of grids, but since the grid might not be unit-scale, we need to also scale by the grid cell size.
+    
+    
+    advection_source_coord = clamp(advection_source_coord,                  // Handling the case where the velocity traces back to outside the bounds of the buffer
+                                   0.5, i_Resolution - 0.5);                // left hand side ensures the smallest element to read is element , and the biggest n-1
+    
+    _new_advected_field[id2Dto1D(coord)] = _dissipationFactor *             // Disspation factor 1 = lasts forever, 0 = instantly dissipates, dunno how physcilly accurate this is. 
+                                           StructuredBufferBilinearLoad(_field_to_advect_buffer, advection_source_coord);
+
+}

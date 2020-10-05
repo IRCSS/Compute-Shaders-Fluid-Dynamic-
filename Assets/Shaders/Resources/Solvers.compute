@@ -33,14 +33,14 @@ float                        _centerFactor;                          // it is th
 
 
 //----------------------------------------------------------------------------
-// Function     	: Jacobi_Solve
-// Description	    : Iterative method for solving linear equations systems. It solves the x in the equation Ax = b
+// Function         : Jacobi_Solve
+// Description      : Iterative method for solving linear equations systems. It solves the x in the equation Ax = b
 //                    The function is dispatch N times from the CPU. N shouldnt be lower than 20
 //                    The results are written in the _results buffer based on the pervius iteration results which are in _updated_x_buffer
 //                    The CPU swaps these buffers back and forth between each iteration
 //----------------------------------------------------------------------------
 
-[numthreads(16,16,1)]
+[numthreads(16,16,1)]                            // runs once for every equation variable that needs solving
 void Jacobi_Solve(uint3 id : SV_DispatchThreadID)
 {
 
