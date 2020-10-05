@@ -34,8 +34,9 @@ float4 StructuredBufferBilinearLoad(StructuredBuffer<float4> buffer, float2 coor
     float4 right_up   = buffer[id2Dto1D(closest_grid_coords.zw)];
 
 
-   return lerp(lerp(left_down, right_down, lerp_factors.x),             // Bilinear interpolation in x direction
-               lerp(left_up, right_up, lerp_factors.x), lerp_factors.y);// Same but in y direction
+   return lerp(lerp(left_down, right_down, lerp_factors.x),             // Bilinear interpolation in x direction on the lower part
+               lerp(left_up,   right_up,   lerp_factors.x),             // Bilinear interpolation in x direction on the upper part
+               lerp_factors.y);                                         // Same but in y direction
 }
 
 // -------------------------------------------------------------------------------------------------------------------------------------
