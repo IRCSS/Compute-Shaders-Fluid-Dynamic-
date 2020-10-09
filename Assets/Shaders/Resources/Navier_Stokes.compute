@@ -90,7 +90,7 @@ RWStructuredBuffer<float4>   _divergence_values;                            // T
 [numthreads(16, 16, 1)]                                                     // runs once per cell of the vector field
 void divergence(uint3 id : SV_DispatchThreadID)
 {                                                                           
-    float partialXY = 1. / (2. * i_Resolution);
+    float partialXY = 2. * i_Resolution;
     uint2 coord     = id.xy;                                                // one to one mapping between thread ids in the dispatch and the structured buffer
 
     float4 left     = _vector_field[id2Dto1D(coord - uint2(1, 0))];
@@ -99,19 +99,38 @@ void divergence(uint3 id : SV_DispatchThreadID)
     float4 top      = _vector_field[id2Dto1D(coord + uint2(0, 1))];
 
     _divergence_values[id2Dto1D(coord)] = 
-                       partialXY * (right - left + top - bottom);
+                       (right - left + top - bottom) *  1. / partialXY;
 }
     
 // _______________________________
 
+// CALCULATE_DIVERGENCE_FREE DECLERNATIONS
+
+StructuredBuffer<float4>    _non_zero_divergence_velocity_field;            // This is the velocity field which we have calculated after advection, diffusion and adding external forces
+StructuredBuffer<float4>    _pressure_field;                                // This is actually a scalar float field.But to be able to use a generic solver for the possion equation as well as diffusion I am using a float4 structured buffer. The pressure field is calculated with the solve from the euqation lepralce(pressure_field) = divergence(velocity_field) 
+RWStructuredBuffer<float4>  _pressure_gradient;                             // It is not nesscerly to save this on device memory, it could also be saved in the thread register and immedietly subtracted from the non zero divergent vector field, however for debug porpuses, I write this to the vram
+RWStructuredBuffer<float4>  _divergence_free_field;                         // the result of the projection is written here
 
 //----------------------------------------------------------------------------
 // Function         : calculate_divergence_free
-// Description      : The gradient function calculates the gradient of a scalar vector field
-//                    After the 
+// Description      : Last step of the navier stoke equations. After the pressure disturbance 
+//                    caused by the non zero diveragnce vector field is calculated through the possion equation, 
+//                    the acceleration caused by this uneven pressure field is calculated by taking the gradient of this
+//                    pressure field and subtracted from the non zero divergence vector field. 
+//                    
+//                    divergence_free_vector_field = non_zero_divergence_vector_field - gradient(pressure_field)
 //----------------------------------------------------------------------------
 [numthreads(16, 16, 1)]                                                     // runs once per cell of the vector field
 void calculate_divergence_free(uint3 id : SV_DispatchThreadID)
 {                                                                           
-  
+     float partialXY = 2. * i_Resolution;
+     uint2 coord = id.xy;                                                   // one to one mapping between thread ids in the dispatch and the structured buffer
+
+     float4 gradient_value = gradient(_pressure_field, partialXY, coord);
+
+     _pressure_gradient[id2Dto1D(coord)] = gradient_value;                  // For debug and visualisation porpuses
+
+     _divergence_free_field[id2Dto1D(coord)] = 
+            _non_zero_divergence_velocity_field[id2Dto1D(coord)] - gradient_value;
+
 }

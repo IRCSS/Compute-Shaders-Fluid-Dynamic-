@@ -39,6 +39,24 @@ float4 StructuredBufferBilinearLoad(StructuredBuffer<float4> buffer, float2 coor
                lerp_factors.y);                                         // Same but in y direction
 }
 
+//----------------------------------------------------------------------------
+// Function         : gradient
+// Description      : Calculates the gradient of a scalar field. The gradient is defined as
+//                    the change of the vector field value in x and y direction. The scalar field
+//                    here is passed as a float4 structured buffer, so that the same generic solver can be used
+//                    for possion equation as well as the diffusion equation
+//----------------------------------------------------------------------------
+float4 gradient(StructuredBuffer<float4> scalar_field, float partial_xy, uint2 coord) {
+    
+    float left     = scalar_field[id2Dto1D(coord - uint2(1, 0))].x;
+    float right    = scalar_field[id2Dto1D(coord + uint2(1, 0))].x;
+    float bottom   = scalar_field[id2Dto1D(coord - uint2(0, 1))].x;
+    float top      = scalar_field[id2Dto1D(coord + uint2(0, 1))].x;
+
+    return float4(right - left, top - bottom, 0.0, 0.0)  / partial_xy;
+
+}
+
 // -------------------------------------------------------------------------------------------------------------------------------------
 
 #endif
