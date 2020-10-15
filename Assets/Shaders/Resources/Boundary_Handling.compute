@@ -3,7 +3,7 @@
 //____________________________________________________________________________________
 // KERNELS
 #pragma kernel NeuMannBoundary
-
+#pragma kernel debugBoundaryAlgo
 //____________________________________________________________________________________
 // DECLERNATIONS
 #include "FluidDynamicCommonUniforms.cginc"
@@ -49,5 +49,37 @@ void NeuMannBoundary(uint3 id : SV_DispatchThreadID)
     if (case_id == 3) { coord = uint2(rest,             0               );   offset = uint2( 0,  1); }
 
     _field_to_contain[id2Dto1D(coord)] = _scale * _field_to_contain[id2Dto1D(coord + offset)];    // Since the threads are only writing on the border cells, there is no racing condition here
+
+}
+
+// _____________________________________
+
+// DEBUG DECLERNATIONS
+
+RWTexture2D<float4> _boundary_debug_texture;
+
+//----------------------------------------------------------------------------
+// Function         : debugBoundaryAlgo
+// Description      : This program debugs the algorithm used for determining the borders
+//----------------------------------------------------------------------------
+
+
+[numthreads(256, 1, 1)]
+void debugBoundaryAlgo(uint3 id : SV_DispatchThreadID) 
+{
+    uint  case_id = id.x / i_Resolution;               // 0 = left_corner, 1 = right_corner , 2 = top_corner, 3 = bottom_corner
+    uint  rest    = id.x - case_id * i_Resolution;     // In the dispatch, this is used to map the threads in each case to a cell on a border
+
+    uint2 coord   = uint2(0, 0);
+    uint2 offset  = uint2(0, 0);
+
+    float4 borderColor;
+
+    if (case_id == 0) { coord = uint2(0,                rest            );   offset = uint2( 1,  0);  borderColor = float4(1.,0.,0.,1.);}
+    if (case_id == 1) { coord = uint2(i_Resolution - 1, rest            );   offset = uint2(-1,  0);  borderColor = float4(0.,1.,0.,1.);}
+    if (case_id == 2) { coord = uint2(rest,             i_Resolution - 1);   offset = uint2( 0, -1);  borderColor = float4(0.,0.,1.,1.);}
+    if (case_id == 3) { coord = uint2(rest,             0               );   offset = uint2( 0,  1);  borderColor = float4(0.,1.,1.,1.);}
+
+    _boundary_debug_texture[coord] = borderColor;
 
 }
