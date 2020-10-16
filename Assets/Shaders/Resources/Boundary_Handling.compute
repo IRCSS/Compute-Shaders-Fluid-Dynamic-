@@ -4,6 +4,7 @@
 // KERNELS
 #pragma kernel NeuMannBoundary
 #pragma kernel debugBoundaryAlgo
+
 //____________________________________________________________________________________
 // DECLERNATIONS
 #include "FluidDynamicCommonUniforms.cginc"

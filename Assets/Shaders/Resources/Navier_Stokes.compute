@@ -124,7 +124,7 @@ RWStructuredBuffer<float4>  _divergence_free_field;                         // t
 void calculate_divergence_free(uint3 id : SV_DispatchThreadID)
 {                                                                           
      float partialXY = 2. * i_Resolution;
-     uint2 coord = id.xy;                                                   // one to one mapping between thread ids in the dispatch and the structured buffer
+     uint2 coord     = id.xy;                                               // one to one mapping between thread ids in the dispatch and the structured buffer
 
      float4 gradient_value = gradient(_pressure_field, partialXY, coord);
 
