@@ -35,9 +35,9 @@ void AddDye(uint3 id : SV_DispatchThreadID)
 {
     
 
-    float2 vecToMouse = _mouse_position - id.xy;
+    float2 vecToMouse = _mouse_position - (float2)id.xy;
     float  disToMouse = length(vecToMouse);
-
+    
     float  dyeAmount  = smoothstep(_mouse_falloff.x, _mouse_falloff.y, disToMouse);          // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
 
            dyeAmount *= _mouse_pressed;                                                      // Factor in the mouse being pressed. This is zero when mouse is not being pressed and one when it is. On touch sensitive stuff this can also take a value between

@@ -11,7 +11,12 @@
 // Macro            : id2Dto1D
 // Description      : This macro converts the 1D mapping of the structuredbuffer to the 2D grids of the vector field
 //----------------------------------------------------------------------------
-#define id2Dto1D(xy) (xy.x + (xy.y * i_Resolution.x)).x
+//#define id2Dto1D(m_coord) (m_coord.x + (m_coord.y * (float)i_Resolution))        // I was getting to many compiler issues with a macro
+
+uint id2Dto1D(uint2 m_coord) {
+    return (m_coord.x + ((m_coord.y) * (float)i_Resolution));
+}
+
 
 //----------------------------------------------------------------------------
 // Function         : Bilinear Structured Buffer Sampler

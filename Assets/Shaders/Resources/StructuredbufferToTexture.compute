@@ -32,7 +32,7 @@ uint                       _Results_Resolution;
 [numthreads(16,16,1)]
 void StructeredToTextureBillinear(uint3 id : SV_DispatchThreadID)
 {
-    float2 coord  = (float2)id.xy / (float2)_Results_Resolution;               // first normailizing the thread ids based on the targets resoltuion
+    float2 coord  = (float2)id.xy / (float)_Results_Resolution;               // first normailizing the thread ids based on the targets resoltuion
            coord *= (float) i_Resolution;                                      // remapping it to the coordinates of the structured buffer, but still as 2D ids. 
 
     _Results[id.xy] = StructuredBufferBilinearLoad(_Source, coord);
