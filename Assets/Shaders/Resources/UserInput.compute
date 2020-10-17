@@ -3,7 +3,7 @@
 //____________________________________________________________________________________
 // KERNELS
 #pragma kernel AddDye
-
+#pragma kernel AddForce_mouse
 
 //____________________________________________________________________________________
 // DECLERNATIONS
@@ -46,4 +46,16 @@ void AddDye(uint3 id : SV_DispatchThreadID)
     float4 currentDyeBufferValue  = _dye_buffer[id2Dto1D(id.xy)];
            currentDyeBufferValue += dyeAmount * _dye_color;
     _dye_buffer[id2Dto1D(id.xy)]  = currentDyeBufferValue;
+}
+
+//- ---------------------------
+// ADDDFORCE DECLERNATIONS
+RWStructuredBuffer<float4> _user_applied_force_buffer;                       // This buffer contains the user applied force per cell of the simulation grid. 
+float                      _force_multiplier;                                // Determines how strong the force is which the mouse movment applies
+float2                     _mouse_pos_prev;                                  // The previous frame mouse position. This is already in the coordinate system of the grids
+float2                     _mouse_pos_current;                               // Current frame mouse position, same as above.
+
+[numthreads(16,16,1)]
+void AddForce_mouse(uint3 id : SV_DispatchThreadID) {
+
 }
