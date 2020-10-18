@@ -4,4 +4,6 @@
 uint  i_Resolution;
 float i_timeStep;
 
+
+#define epsilon 0.0001
 #endif

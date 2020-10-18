@@ -25,7 +25,7 @@ float                      _mouse_pressed;                                   // 
 float2                     _mouse_falloff;                                   // Determines at which distance the mouse should start applying dye to a cell and how it falls off as it gets futher away. X is the brush size and y is the fallout towards inside. So x should be bigger than y.
 //----------------------------------------------------------------------------
 // Function         : AddDye
-// Description      : This function adds dye on the structured buffer that contains
+// Description      : This function adds dye on the structured buffer that contains 
 //                    The dye quanitaty. It runs once per grid cell on the simulation
 //                    grid
 //----------------------------------------------------------------------------
@@ -52,10 +52,33 @@ void AddDye(uint3 id : SV_DispatchThreadID)
 // ADDDFORCE DECLERNATIONS
 RWStructuredBuffer<float4> _user_applied_force_buffer;                       // This buffer contains the user applied force per cell of the simulation grid. 
 float                      _force_multiplier;                                // Determines how strong the force is which the mouse movment applies
+float                      _force_effect_radius;                             // This parameter determins how large the mouse object is which iis pushing fluid around on the grid
+float                      _force_falloff;                                   // This determins how soft the fall off is from the force effect radius
 float2                     _mouse_pos_prev;                                  // The previous frame mouse position. This is already in the coordinate system of the grids
 float2                     _mouse_pos_current;                               // Current frame mouse position, same as above.
 
+//- ---------------------------
+// ADDFORCE HELPER FUNCTIONS
+#include "2DDrawingUtility.cginc"
+
+//----------------------------------------------------------------------------
+// Function         : AddForce_mouse
+// Description      : This kernel adds user input force based on mouse movement to the fluid simulation
+//                    Based on the previous pos and current mouse positon, for all pixels that were on the way
+//                    a force is added to them. The calculation is done using projections and sign distance. 
+//----------------------------------------------------------------------------
 [numthreads(16,16,1)]
 void AddForce_mouse(uint3 id : SV_DispatchThreadID) {
+    float2 mouse_prev2Curr  = _mouse_pos_current - _mouse_pos_prev;
+
+    float  mouse_mov_length = length(mouse_prev2Curr);
+
+    if (mouse_mov_length < epsilon) return;
+           
+
+    float cellCloseEnough = DrawHalfVectorWithLength(_mouse_pos_prev, mouse_prev2Curr / mouse_mov_length, mouse_mov_length,
+                                               (float2) id.xy, _force_effect_radius, _force_falloff);
+    
+    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(cellCloseEnough * mouse_prev2Curr.xy * _force_multiplier, 0., 0.);
 
 }

@@ -12,7 +12,7 @@ public struct DispatchDimensions
 }
 
 public static class ComputeShaderUtility { 
-       static DispatchDimensions CheckGetDispatchDimensions(ComputeShader shader, int handle, uint desired_threadNum_x, uint desired_threadNum_y, uint desired_threadNum_z)
+       public static DispatchDimensions CheckGetDispatchDimensions(ComputeShader shader, int handle, uint desired_threadNum_x, uint desired_threadNum_y, uint desired_threadNum_z)
        {
        
            uint group_size_x, group_size_y, group_size_z;
