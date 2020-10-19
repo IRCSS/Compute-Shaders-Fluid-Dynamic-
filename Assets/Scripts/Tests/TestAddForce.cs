@@ -29,6 +29,9 @@ public class TestAddForce : MonoBehaviour
 
     private Vector2       mouse_previus_pos;
 
+    // ------------------------------------------------------------------
+    // INITALISATION
+
     void Start()
     {
         // -----------------------
@@ -95,7 +98,8 @@ public class TestAddForce : MonoBehaviour
 
     }
 
-    // Update is called once per frame
+    // ------------------------------------------------------------------
+    // LOOP
     void Update()
     {
         Vector3 mouse_pos_pixel_coord = Input.mousePosition;
