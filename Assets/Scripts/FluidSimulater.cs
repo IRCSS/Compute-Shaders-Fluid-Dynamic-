@@ -74,12 +74,16 @@ public class FluidSimulater
     public void Release()
     {
         visulasation_texture.Release();
+        ComputeShaderUtility.Release();
     }
     // ------------------------------------------------------------------
     // INITALISATION
 
     public void Initialize()
     {
+
+        ComputeShaderUtility.Initialize();
+
         // -----------------------
         main_cam = Camera.main;
         if (main_cam == null) Debug.LogError("Could not find main camera, make sure the camera is tagged as main");
@@ -99,8 +103,8 @@ public class FluidSimulater
         // -----------------------
         // Setting kernel handles
 
-        _handle_add_dye = UserInputShader                .FindKernel("AddDye");
-        _handle_st2tx   = StructuredBufferToTextureShader.FindKernel("StructeredToTextureBillinear");
+        _handle_add_dye =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
+        _handle_st2tx   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
 
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
@@ -185,6 +189,9 @@ public class FluidSimulater
 
     private void UpdateRuntimeKernelParameters()
     {
+        UserInputShader.SetVector("_dye_color",         Color.HSVToRGB(0.2f, 0.8f, 0.6f));
+        UserInputShader.SetFloat ("_mouse_dye_radius",  dye_radius                      );
+        UserInputShader.SetFloat ("_mouse_dye_falloff", dye_falloff                     );
 
     }
 

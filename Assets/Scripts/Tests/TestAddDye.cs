@@ -26,7 +26,7 @@ public class TestAddDye : MonoBehaviour
     private int           i_Resolution     = 256;                         // Resolution of the simulation grid
 
     private Color         dye_color        = Color.red;
-    private Vector2       mouse_fallout    = new Vector2(5.0f, 1.0f);
+    private Vector2       mouse_fallout    = new Vector2(2.0f, 4.0f);
 
     // ------------------------------------------------------------------
     // INITALISATION
@@ -57,9 +57,10 @@ public class TestAddDye : MonoBehaviour
         // -----------------------
         addDyeHandle = addDyeComputeShader.FindKernel("AddDye");
 
-        addDyeComputeShader.SetInt   ("i_Resolution",   i_Resolution);
-        addDyeComputeShader.SetVector("_dye_color",     dye_color);
-        addDyeComputeShader.SetVector("_mouse_falloff", mouse_fallout);
+        addDyeComputeShader.SetInt   ("i_Resolution",                 i_Resolution);
+        addDyeComputeShader.SetVector("_dye_color",                   dye_color);
+        addDyeComputeShader.SetFloat ("_mouse_dye_radius",            mouse_fallout.x);
+        addDyeComputeShader.SetFloat ("_mouse_dye_falloff",           mouse_fallout.y);
         addDyeComputeShader.SetBuffer(addDyeHandle, "_dye_buffer",    dye_buffer);
         //___
 

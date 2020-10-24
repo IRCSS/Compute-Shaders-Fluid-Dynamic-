@@ -46,8 +46,8 @@ public static class ComputeShaderUtility {
 
 
            if (desired_threadNum_x % group_size_x != 0 ||
-              desired_threadNum_y % group_size_y != 0 ||
-              desired_threadNum_z % group_size_z != 0)
+               desired_threadNum_y % group_size_y != 0 ||
+               desired_threadNum_z % group_size_z != 0)
            {
 
 
