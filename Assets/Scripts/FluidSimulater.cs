@@ -15,7 +15,7 @@ public class FluidSimulater
     public ComputeShader StokeNavierShader;
     public ComputeShader SolverShader;
     public ComputeShader BorderShader;
-    public ComputeShader StructuredBufferToShader;
+    public ComputeShader StructuredBufferToTextureShader;
     public ComputeShader UserInputShader;
 
     [Space(4)]
@@ -34,7 +34,13 @@ public class FluidSimulater
 
     private Camera        main_cam;
 
+    private CommandBuffer sim_command_buffer;
     private RenderTexture visulasation_texture;
+
+
+    private int           _handle_add_dye;
+    private int           _handle_st2tx;
+    
 
 
     // ------------------------------------------------------------------
@@ -42,20 +48,33 @@ public class FluidSimulater
 
     public FluidSimulater()                       // Default Constructor
     {
-        canvas_dimension     = 512;
-        simulation_dimension = 256;
+        canvas_dimension     = 512   ;
+        simulation_dimension = 256   ;
+        force_radius         = 1     ;
+        force_falloff        = 2     ;
+        dye_radius           = 1.0f  ;
+        dye_falloff          = 2.0f  ;
+
     }
 
     public FluidSimulater(FluidSimulater other)   // Copy Constructor
     {
-        canvas_dimension     = other.canvas_dimension;
-        simulation_dimension = other.simulation_dimension;
+        canvas_dimension     = other.canvas_dimension     ;
+        simulation_dimension = other.simulation_dimension ;
+        force_radius         = other.force_radius         ;
+        force_falloff        = other.force_falloff        ;
+        dye_radius           = other.dye_radius           ;
+        dye_falloff          = other.dye_falloff          ;
     }
 
     // ------------------------------------------------------------------
     // DESTRUCTOR
 
-
+        
+    public void Release()
+    {
+        visulasation_texture.Release();
+    }
     // ------------------------------------------------------------------
     // INITALISATION
 
@@ -78,6 +97,30 @@ public class FluidSimulater
 
         visulasation_texture.Create();
         // -----------------------
+        // Setting kernel handles
+
+        _handle_add_dye = UserInputShader                .FindKernel("AddDye");
+        _handle_st2tx   = StructuredBufferToTextureShader.FindKernel("StructeredToTextureBillinear");
+
+        // -----------------------
+        // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
+
+        UserInputShader    .SetInt("i_Resolution", simulation_dimension);
+
+        // __
+
+        StructuredBufferToTextureShader.SetInt    ("i_Resolution",            simulation_dimension);
+        StructuredBufferToTextureShader.SetInt    ("_Results_Resolution",     canvas_dimension    );
+        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", visulasation_texture);
+
+        // -----------------------
+
+        sim_command_buffer = new CommandBuffer()
+        {
+            name = "Simulation_Command_Buffer",
+        };
+
+
 
     }
     // ------------------------------------------------------------------
@@ -91,32 +134,32 @@ public class FluidSimulater
     // ------------------------------------------------------------------
     // SIMULATION STEPS
 
-    public void AddUserForce()
+    public void AddUserForce(ComputeBuffer force_buffer)
     {
 
     }
 
-    public void AddDye()
+    public void AddDye(ComputeBuffer dye_buffer)
     {
 
     }
 
-    public void Diffuse()
+    public void Diffuse(ComputeBuffer buffer_to_diffuse)
     {
 
     }
 
-    public void Advect()
+    public void Advect(ComputeBuffer buffer_to_advect, ComputeBuffer velocity_buffer)
     {
 
     }
 
-    public void Project()
+    public void Project(ComputeBuffer buffer_to_visualize)
     {
 
     }
 
-    public void Visualiuse()
+    public void Visualiuse(ComputeBuffer buffer_to_visualize)
     {
 
     }
@@ -138,37 +181,23 @@ public class FluidSimulater
     {
 
     }
-}
 
 
-
-public class FluidSimulaterBuffers
-{
-
-    // ------------------------------------------------------------------
-    // VARIABLES
-    //___________
-    // public
-    public ComputeBuffer velocity_buffer;
-    public ComputeBuffer dye_buffer;
-
-
-    // ------------------------------------------------------------------
-    // INITALISATION
-
-    public void Create(int simulation_dimension)
+    private void UpdateRuntimeKernelParameters()
     {
-        velocity_buffer = new ComputeBuffer(simulation_dimension * simulation_dimension, sizeof(float) * 4);
-        dye_buffer      = new ComputeBuffer(simulation_dimension * simulation_dimension, sizeof(float) * 4);
-        
+
     }
 
-    // ------------------------------------------------------------------
-    // DESTRUCTOR
-
-    public void Release()
+    private void DispatchComputeOnCommandBuffer(CommandBuffer cb, ComputeShader toDispatch, int kernel, uint thread_num_x, uint thread_num_y, uint thread_num_z)
     {
-        velocity_buffer.Release();
-        dye_buffer     .Release();
+        DispatchDimensions group_nums = ComputeShaderUtility.CheckGetDispatchDimensions(toDispatch, kernel, thread_num_x, thread_num_y, thread_num_z);
+        cb.DispatchCompute(toDispatch, kernel, (int) group_nums.dispatch_x, (int) group_nums.dispatch_y, (int) group_nums.dispatch_z);
+
+        // Debug
+        Debug.Log(string.Format("Attached the computeshader {0}, at kernel {1}, to the commandbuffer {2}." +
+            "Dispatch group numbers are, in x, y,z respectivly: {3}", 
+            toDispatch.name, ComputeShaderUtility.GetKernelNameFromHandle(toDispatch, kernel), cb.name,
+            group_nums.ToString()));
     }
 }
+

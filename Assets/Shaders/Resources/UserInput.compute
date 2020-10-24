@@ -22,7 +22,9 @@ RWStructuredBuffer<float4> _dye_buffer;                                      // 
 float4                     _dye_color;                                       // The color to add when mouse is pressed. There are other ways to switch between colors
 float2                     _mouse_position;                                  // position of the mouse on the simulation grid it goes between 0 and the cell number in each dimension
 float                      _mouse_pressed;                                   // weather the mouse is being pressed right now. It supports half pressed and sensitivity
-float2                     _mouse_falloff;                                   // Determines at which distance the mouse should start applying dye to a cell and how it falls off as it gets futher away. X is the brush size and y is the fallout towards inside. So x should be bigger than y.
+float                      _mouse_dye_falloff;                               // Determines at which distance the mouse should start applying dye to a cell and how it falls off as it gets futher away. X is the brush size and y is the fallout towards inside. So x should be bigger than y.
+float                      _mouse_dye_radius;
+
 //----------------------------------------------------------------------------
 // Function         : AddDye
 // Description      : This function adds dye on the structured buffer that contains 
@@ -38,9 +40,10 @@ void AddDye(uint3 id : SV_DispatchThreadID)
     float2 vecToMouse = _mouse_position - (float2)id.xy;
     float  disToMouse = length(vecToMouse);
     
-    float  dyeAmount  = smoothstep(_mouse_falloff.x, _mouse_falloff.y, disToMouse);          // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
+    float  dyeAmount  = smoothstep(_mouse_dye_radius, 
+        _mouse_dye_radius + _mouse_dye_falloff, disToMouse);                 // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
 
-           dyeAmount *= _mouse_pressed;                                                      // Factor in the mouse being pressed. This is zero when mouse is not being pressed and one when it is. On touch sensitive stuff this can also take a value between
+           dyeAmount *= _mouse_pressed;                                      // Factor in the mouse being pressed. This is zero when mouse is not being pressed and one when it is. On touch sensitive stuff this can also take a value between
 
 
     float4 currentDyeBufferValue  = _dye_buffer[id2Dto1D(id.xy)];
