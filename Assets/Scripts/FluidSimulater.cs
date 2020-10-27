@@ -24,6 +24,10 @@ public class FluidSimulater
     [Space(2)]
     public uint          canvas_dimension     = 512;          // Resolution of the render target used at the end, this can be lower or higher than the actual simulation grid resoltion
     public uint          simulation_dimension = 256;          // Resolution of the simulation grid
+    public uint          solver_iteration_num = 80;
+    public float         grid_scale           = 1;
+    public float         time_step            = 1;
+    public float         Viscosity            = 0.5f;
     public float         force_radius         = 1;
     public float         force_falloff        = 2;
     public float         dye_radius           = 1.0f;
@@ -51,6 +55,8 @@ public class FluidSimulater
     {
         canvas_dimension     = 512   ;
         simulation_dimension = 256   ;
+        solver_iteration_num = 80    ;
+        grid_scale           = 1     ;
         force_radius         = 1     ;
         force_falloff        = 2     ;
         dye_radius           = 1.0f  ;
@@ -62,6 +68,8 @@ public class FluidSimulater
     {
         canvas_dimension     = other.canvas_dimension     ;
         simulation_dimension = other.simulation_dimension ;
+        solver_iteration_num = other.solver_iteration_num ;
+        grid_scale           = other.grid_scale           ;
         force_radius         = other.force_radius         ;
         force_falloff        = other.force_falloff        ;
         dye_radius           = other.dye_radius           ;
@@ -156,7 +164,16 @@ public class FluidSimulater
 
     public void Diffuse(ComputeBuffer buffer_to_diffuse)
     {
+        if (!IsValid())     return;
+        if (Viscosity <= 0) return;        // Fluid with a viscosity of zero does not diffuse
 
+        float centerFactor           = grid_scale * grid_scale / (Viscosity * time_step);
+        float reciprocal_of_diagonal = 1.0f / (4.0f + centerFactor);
+
+        for (int i = 0; i < solver_iteration_num; i++)
+        {
+            sim_command_buffer.SetGlobalInt("_current_iteration", i);
+        }
     }
 
     public void Advect(ComputeBuffer buffer_to_advect, ComputeBuffer velocity_buffer)
