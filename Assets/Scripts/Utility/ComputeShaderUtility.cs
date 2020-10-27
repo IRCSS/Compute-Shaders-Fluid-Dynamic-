@@ -26,7 +26,9 @@ public static class ComputeShaderUtility {
     // INITALISATION
     public static void Initialize()
     {
-        map_kernlesToNames.Clear();
+        if (map_kernlesToNames != null)
+            map_kernlesToNames.Clear();
+        else map_kernlesToNames = new Dictionary<ComputeShader, Dictionary<int, string>>();
     }
 
     // ------------------------------------------------------------------

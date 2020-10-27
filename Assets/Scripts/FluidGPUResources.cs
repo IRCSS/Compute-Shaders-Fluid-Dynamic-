@@ -36,7 +36,7 @@ public class FluidGPUResources
 
     public FluidGPUResources(FluidSimulater fso)       // The actual contructor used by the code
     {
-        simulation_dimensions = fso.simulation_dimension;
+        simulation_dimensions = (int) fso.simulation_dimension;
     }
 
 
@@ -51,10 +51,10 @@ public class FluidGPUResources
     // ------------------------------------------------------------------
     // INITALISATION
 
-    public void Create(int simulation_dimension)
+    public void Create()
     {
-        velocity_buffer = new ComputeBuffer(simulation_dimension * simulation_dimension, sizeof(float) * 4);
-        dye_buffer      = new ComputeBuffer(simulation_dimension * simulation_dimension, sizeof(float) * 4);
+        velocity_buffer = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
+        dye_buffer      = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
 
     }
 

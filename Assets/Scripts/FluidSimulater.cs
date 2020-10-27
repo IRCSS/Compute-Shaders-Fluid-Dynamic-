@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+[System.Serializable]
 public class FluidSimulater
 {
     // ------------------------------------------------------------------
@@ -21,8 +22,8 @@ public class FluidSimulater
     [Space(4)]
     [Header("Simulation Settings")]
     [Space(2)]
-    public int           canvas_dimension     = 512;          // Resolution of the render target used at the end, this can be lower or higher than the actual simulation grid resoltion
-    public int           simulation_dimension = 256;          // Resolution of the simulation grid
+    public uint          canvas_dimension     = 512;          // Resolution of the render target used at the end, this can be lower or higher than the actual simulation grid resoltion
+    public uint          simulation_dimension = 256;          // Resolution of the simulation grid
     public float         force_radius         = 1;
     public float         force_falloff        = 2;
     public float         dye_radius           = 1.0f;
@@ -93,7 +94,7 @@ public class FluidSimulater
         main_cam.orthographicSize = 1;
 
         // -----------------------
-        visulasation_texture = new RenderTexture(canvas_dimension, canvas_dimension, 0)
+        visulasation_texture = new RenderTexture((int) canvas_dimension, (int)canvas_dimension, 0)
         {
             enableRandomWrite = true,
             useMipMap         = false,
@@ -109,13 +110,15 @@ public class FluidSimulater
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
 
-        UserInputShader    .SetInt("i_Resolution", simulation_dimension);
+        UserInputShader    .SetInt("i_Resolution", (int) simulation_dimension);
 
         // __
 
-        StructuredBufferToTextureShader.SetInt    ("i_Resolution",            simulation_dimension);
-        StructuredBufferToTextureShader.SetInt    ("_Results_Resolution",     canvas_dimension    );
-        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", visulasation_texture);
+        UpdateRuntimeKernelParameters();
+
+        StructuredBufferToTextureShader.SetInt    ("i_Resolution",            (int) simulation_dimension);
+        StructuredBufferToTextureShader.SetInt    ("_Results_Resolution",     (int) canvas_dimension    );
+        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results",       visulasation_texture);
 
         // -----------------------
 
@@ -124,7 +127,7 @@ public class FluidSimulater
             name = "Simulation_Command_Buffer",
         };
 
-
+        
 
     }
     // ------------------------------------------------------------------
@@ -132,7 +135,7 @@ public class FluidSimulater
 
     public void Tick(float deltaTime)
     {
-
+        UpdateRuntimeKernelParameters();
     }
 
     // ------------------------------------------------------------------
@@ -145,7 +148,10 @@ public class FluidSimulater
 
     public void AddDye(ComputeBuffer dye_buffer)
     {
+        if (!IsValid()) return;
 
+        SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_dye, simulation_dimension, simulation_dimension, 1);
     }
 
     public void Diffuse(ComputeBuffer buffer_to_diffuse)
@@ -165,10 +171,21 @@ public class FluidSimulater
 
     public void Visualiuse(ComputeBuffer buffer_to_visualize)
     {
+        if (!IsValid()) return;
 
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
+        sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget);
 
     }
 
+    public bool BindCommandBuffer()
+    {
+        if (!IsValid()) return false;
+
+        main_cam.AddCommandBuffer(CameraEvent.AfterEverything, sim_command_buffer);
+        return true;
+    }
     // ------------------------------------------------------------------
     // HELPER FUNCTIONS
 
@@ -190,10 +207,42 @@ public class FluidSimulater
 
     private void UpdateRuntimeKernelParameters()
     {
+        // ------------------------------------------------------------------------------
+        // USER INPUT ADD DYE 
         UserInputShader.SetVector("_dye_color",         Color.HSVToRGB(0.2f, 0.8f, 0.6f));
         UserInputShader.SetFloat ("_mouse_dye_radius",  dye_radius                      );
         UserInputShader.SetFloat ("_mouse_dye_falloff", dye_falloff                     );
 
+        float mouse_pressed = 0.0f;
+
+        if (Input.GetKey(KeyCode.Mouse0)) mouse_pressed = 1.0f;
+
+        UserInputShader.SetFloat("_mouse_pressed", mouse_pressed);
+
+        Vector3 mouse_pos_pixel_coord = Input.mousePosition;
+        Vector2 mouse_pos_normalized  = main_cam.ScreenToViewportPoint(mouse_pos_pixel_coord);
+                mouse_pos_normalized  = new Vector2(Mathf.Clamp01(mouse_pos_normalized.x), Mathf.Clamp01(mouse_pos_normalized.y));
+        Vector2 mouse_pos_struct_pos  = new Vector2(mouse_pos_normalized.x * simulation_dimension, mouse_pos_normalized.y * simulation_dimension);
+
+        UserInputShader.SetVector("_mouse_position", mouse_pos_struct_pos);                   // Pass on the mouse position already in the coordinate system of the structured buffer as 2D coord
+
+    }
+
+    // _______________
+    public bool IsValid()
+    {
+
+        if (sim_command_buffer   == null) { Debug.LogError("ERROR: The Fluid Simulater Object is not correctly initalized. The CommandBuffer is NULL");        return false;}
+        if (visulasation_texture == null) { Debug.LogError("ERROR: The Fluid Simulater Object is not correctly initalized. The visulasation Texture is NULL"); return false;}
+        if (main_cam             == null) { Debug.LogError("ERROR: The Fluid Simulater Object is not correctly initalized. The camera reference is NULL");     return false;}
+
+        return true;
+    }
+
+
+    private void SetBufferOnCommandList(CommandBuffer cb, ComputeBuffer buffer, string buffer_name)
+    {
+        cb.SetGlobalBuffer(buffer_name, buffer);
     }
 
     private void DispatchComputeOnCommandBuffer(CommandBuffer cb, ComputeShader toDispatch, int kernel, uint thread_num_x, uint thread_num_y, uint thread_num_z)
