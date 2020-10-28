@@ -18,6 +18,7 @@ public class FluidSimulater
     public ComputeShader BorderShader;
     public ComputeShader StructuredBufferToTextureShader;
     public ComputeShader UserInputShader;
+    public ComputeShader StructuredBufferUtilityShader;
 
     [Space(4)]
     [Header("Simulation Settings")]
@@ -45,8 +46,9 @@ public class FluidSimulater
 
     private int           _handle_add_dye;
     private int           _handle_st2tx;
-    
-
+    private int           _handle_Jacobi_Solve;
+    private int           _handle_Copy_StructuredBuffer;
+    private int           _handle_Clear_StructuredBuffer;
 
     // ------------------------------------------------------------------
     // CONSTRUCTOR
@@ -112,8 +114,11 @@ public class FluidSimulater
         // -----------------------
         // Setting kernel handles
 
-        _handle_add_dye =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
-        _handle_st2tx   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
+        _handle_add_dye                 =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
+        _handle_st2tx                   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
+        _handle_Jacobi_Solve            =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
+        _handle_Copy_StructuredBuffer   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
+        _handle_Clear_StructuredBuffer  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
 
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
@@ -136,7 +141,6 @@ public class FluidSimulater
         };
 
         
-
     }
     // ------------------------------------------------------------------
     // LOOP
@@ -167,13 +171,43 @@ public class FluidSimulater
         if (!IsValid())     return;
         if (Viscosity <= 0) return;        // Fluid with a viscosity of zero does not diffuse
 
+        if (!FluidGPUResources.StaticResourcesCreated()) return;
+
         float centerFactor           = grid_scale * grid_scale / (Viscosity * time_step);
         float reciprocal_of_diagonal = 1.0f / (4.0f + centerFactor);
 
+        bool ping_as_results = false;
+
         for (int i = 0; i < solver_iteration_num; i++)
         {
+            ping_as_results = !ping_as_results;
+            if (ping_as_results)                     // Ping ponging back and forth to insure no racing condition. 
+            {
+                SetBufferOnCommandList(sim_command_buffer, buffer_to_diffuse,              "_b_buffer");
+                SetBufferOnCommandList(sim_command_buffer, buffer_to_diffuse,              "_updated_x_buffer");
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping,  "_results");
+            } else
+            {
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping,  "_b_buffer");
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping,  "_updated_x_buffer");
+                SetBufferOnCommandList(sim_command_buffer, buffer_to_diffuse,              "_results");
+            }
+
             sim_command_buffer.SetGlobalInt("_current_iteration", i);
+            DispatchComputeOnCommandBuffer(sim_command_buffer, SolverShader, _handle_Jacobi_Solve, simulation_dimension, simulation_dimension, 1);
         }
+
+        if (ping_as_results)                         // The Ping ponging ended on the helper buffer ping. Copy it to the buffer_to_diffuse buffer
+        {
+            Debug.Log("Diffuse Ended on a Ping Target, now copying over the Ping to the buffer which was supposed to be diffused");
+            SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
+            SetBufferOnCommandList(sim_command_buffer, buffer_to_diffuse,             "_Copy_Target");
+            DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+        }
+
+        sim_command_buffer.SetGlobalVector("_Clear_Value_StructuredBuffer", new Vector4(0.0f,0.0f,0.0f,0.0f));
+        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Clear_Target_StructuredBuffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Clear_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
     }
 
     public void Advect(ComputeBuffer buffer_to_advect, ComputeBuffer velocity_buffer)

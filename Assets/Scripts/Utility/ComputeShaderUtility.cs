@@ -94,10 +94,14 @@ public static class ComputeShaderUtility {
         Dictionary<int, string> cp_kernles;
 
         if (map_kernlesToNames.ContainsKey(cp)) cp_kernles = map_kernlesToNames[cp];
-        else                                    cp_kernles = new Dictionary<int, string>();
+        else
+        {
+            cp_kernles = new Dictionary<int, string>();
+            map_kernlesToNames.Add(cp, cp_kernles);       // Add this dictionary to the other when you create it. Since this is a reference type, you dont need to add this if you have already done it
 
-        cp_kernles        .Add(handle, name      );
-        map_kernlesToNames.Add(cp,     cp_kernles);
+        }
+        cp_kernles        .Add(handle, name);
+       
 
         return handle;
     }

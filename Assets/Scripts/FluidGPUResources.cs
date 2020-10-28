@@ -15,6 +15,9 @@ public class FluidGPUResources
     public ComputeBuffer dye_buffer;
     public ComputeBuffer velocity_buffer;
 
+    public static ComputeBuffer buffer_ping;
+    public static ComputeBuffer buffer_pong;
+
     //___________
     // private
 
@@ -46,6 +49,8 @@ public class FluidGPUResources
     {
         velocity_buffer.Release();
         dye_buffer     .Release();
+        buffer_ping    .Release();
+        buffer_pong    .Release();
     }
 
     // ------------------------------------------------------------------
@@ -55,8 +60,15 @@ public class FluidGPUResources
     {
         velocity_buffer = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
         dye_buffer      = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
-
+        buffer_ping     = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
+        buffer_pong     = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
     }
 
+    public static bool StaticResourcesCreated()
+    {
+
+        if (!buffer_ping.IsValid() || !buffer_pong.IsValid()) { Debug.LogError("Static Resources are still not created. Should not be accessed!"); return false; }
+        return true;
+    }
 
 }

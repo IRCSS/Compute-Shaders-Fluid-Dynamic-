@@ -26,6 +26,7 @@ public class TestDiffuse : MonoBehaviour
 
         //--
         fluid_simulater.AddDye    (resources.dye_buffer);
+        fluid_simulater.Diffuse   (resources.dye_buffer);
         fluid_simulater.Visualiuse(resources.dye_buffer);
 
         fluid_simulater.BindCommandBuffer();
