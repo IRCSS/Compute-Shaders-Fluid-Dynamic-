@@ -18,10 +18,10 @@
 
 // NEUMANN DECLERNATIONS
 
-RWStructuredBuffer<float4> _field_to_contain;
-float                      _scale;               // On, velocity field = -1, Presure Field = 1, Denisty = 0, ... 
-                                                 // For veloicty you want to have opposite for partials to be zero. 
-                                                 // Pressure needs to be the same, otherwise you get acceleration, and denisty is a choice thing
+RWStructuredBuffer<float4> _neumaboundary_field_to_contain;
+float                      _neumaboundary_scale;       // On, velocity field = -1, Presure Field = 1, Denisty = 0, ... 
+                                                       // For veloicty you want to have opposite for partials to be zero. 
+                                                       // Pressure needs to be the same, otherwise you get acceleration, and denisty is a choice thing
 
 //----------------------------------------------------------------------------
 // Function         : NeuMannBoundary
@@ -49,7 +49,7 @@ void NeuMannBoundary(uint3 id : SV_DispatchThreadID)
     if (case_id == 2) { coord = uint2(rest,             i_Resolution - 1);   offset = uint2( 0, -1); }
     if (case_id == 3) { coord = uint2(rest,             0               );   offset = uint2( 0,  1); }
 
-    _field_to_contain[id2Dto1D(coord)] = _scale * _field_to_contain[id2Dto1D(coord + offset)];    // Since the threads are only writing on the border cells, there is no racing condition here
+    _neumaboundary_field_to_contain[id2Dto1D(coord)] = _neumaboundary_scale * _neumaboundary_field_to_contain[id2Dto1D(coord + offset)];    // Since the threads are only writing on the border cells, there is no racing condition here
 
 }
 

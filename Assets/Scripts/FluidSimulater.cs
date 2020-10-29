@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+public enum FieldType
+{
+    Velocity, Pressure, Dye 
+}
+
 [System.Serializable]
 public class FluidSimulater
 {
@@ -50,6 +55,7 @@ public class FluidSimulater
     private int           _handle_Copy_StructuredBuffer;
     private int           _handle_Clear_StructuredBuffer;
     private int           _handle_add_dye_from_texture;
+    private int           _handle_NeuMannBoundary;
 
     // ------------------------------------------------------------------
     // CONSTRUCTOR
@@ -121,6 +127,7 @@ public class FluidSimulater
         _handle_Jacobi_Solve            =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
         _handle_Copy_StructuredBuffer   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
         _handle_Clear_StructuredBuffer  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
+        _handle_NeuMannBoundary         =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
 
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
@@ -186,18 +193,21 @@ public class FluidSimulater
         }
         else
         {
-            SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
-            sim_command_buffer.SetGlobalTexture("_dye_source_texture", source_tex);
-            DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_dye_from_texture, simulation_dimension, simulation_dimension, 1);
+            Debug.LogError("Feature still needs to be implemented!");
+            //SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
+            //sim_command_buffer.SetGlobalTexture("_dye_source_texture", source_tex);
+            //DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_dye_from_texture, simulation_dimension, simulation_dimension, 1);
         }
     }
 
     public void Diffuse(ComputeBuffer buffer_to_diffuse)
     {
         if (!IsValid())     return;
-        if (Viscosity <= 0) return;        // Fluid with a viscosity of zero does not diffuse
+        if (Viscosity <= 0) return;                  // Fluid with a viscosity of zero does not diffuse
 
         if (!FluidGPUResources.StaticResourcesCreated()) return;
+
+        
 
         float centerFactor           = grid_scale * grid_scale / (Viscosity * time_step);
         float reciprocal_of_diagonal = 1.0f / (4.0f + centerFactor);
@@ -237,6 +247,7 @@ public class FluidSimulater
         sim_command_buffer.SetGlobalVector("_Clear_Value_StructuredBuffer", new Vector4(0.0f,0.0f,0.0f,0.0f));
         SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Clear_Target_StructuredBuffer");
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Clear_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+        
     }
 
     public void Advect(ComputeBuffer buffer_to_advect, ComputeBuffer velocity_buffer)
@@ -257,6 +268,22 @@ public class FluidSimulater
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
         sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget);
 
+    }
+
+    public void HandleCornerBoundaries(ComputeBuffer SetBoundaryOn, FieldType fieldType)
+    {
+        float scale;
+        switch (fieldType)
+        {
+            case FieldType.Dye:      scale =  0.0f; break;
+            case FieldType.Velocity: scale = -1.0f; break;
+            case FieldType.Pressure: scale =  1.0f; break;
+            default:                 scale =  0.0f; break;
+        }
+
+        sim_command_buffer.SetGlobalFloat("_neumaboundary_scale", scale);
+        SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn, "_neumaboundary_field_to_contain");
+        
     }
 
     public bool BindCommandBuffer()

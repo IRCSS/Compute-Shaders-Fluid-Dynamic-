@@ -26,10 +26,11 @@ public class TestAddDyeFromTextureAndDiffuse : MonoBehaviour
         resources.Create();
 
         //--
-        fluid_simulater.AddDyeFromTexture(resources.dye_buffer, source_texture, true);
-        fluid_simulater.AddDye           (resources.dye_buffer);
-        fluid_simulater.Diffuse          (resources.dye_buffer);
-        fluid_simulater.Visualiuse       (resources.dye_buffer);
+        fluid_simulater.AddDyeFromTexture      (resources.dye_buffer, source_texture, true);
+        fluid_simulater.AddDye                 (resources.dye_buffer);
+        fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye);
+        fluid_simulater.Diffuse                (resources.dye_buffer);
+        fluid_simulater.Visualiuse             (resources.dye_buffer);
 
         fluid_simulater.BindCommandBuffer();
     }

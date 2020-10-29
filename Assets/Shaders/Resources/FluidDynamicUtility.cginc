@@ -14,7 +14,7 @@
 //#define id2Dto1D(m_coord) (m_coord.x + (m_coord.y * (float)i_Resolution))        // I was getting to many compiler issues with a macro
 
 uint id2Dto1D(uint2 m_coord) {
-    return (m_coord.x + ((m_coord.y) * (float)i_Resolution));
+    return m_coord.x + m_coord.y * i_Resolution;
 }
 
 
