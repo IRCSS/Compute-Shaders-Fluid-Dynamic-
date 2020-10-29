@@ -3,11 +3,13 @@
 //____________________________________________________________________________________
 // KERNELS
 #pragma kernel AddDye
+#pragma kernel AddDye_from_picture
 #pragma kernel AddForce_mouse
 
 //____________________________________________________________________________________
 // DECLERNATIONS
 #include "FluidDynamicCommonUniforms.cginc"
+RWStructuredBuffer<float4> _dye_buffer;                                      // This holds the dye value. This buffer is diffused and advected in the equations
 
 //____________________________________________________________________________________
 // HELPER FUNCTIONS
@@ -18,7 +20,6 @@
 
 // ADDDYE DECLERNATIONS
 
-RWStructuredBuffer<float4> _dye_buffer;                                      // This holds the dye value. This buffer is diffused and advected in the equations
 float4                     _dye_color;                                       // The color to add when mouse is pressed. There are other ways to switch between colors
 float2                     _mouse_position;                                  // position of the mouse on the simulation grid it goes between 0 and the cell number in each dimension
 float                      _mouse_pressed;                                   // weather the mouse is being pressed right now. It supports half pressed and sensitivity
@@ -49,6 +50,25 @@ void AddDye(uint3 id : SV_DispatchThreadID)
     float4 currentDyeBufferValue  = _dye_buffer[id2Dto1D(id.xy)];
            currentDyeBufferValue += dyeAmount * _dye_color;
     _dye_buffer[id2Dto1D(id.xy)]  = currentDyeBufferValue;
+}
+
+
+//----------------------------------------------------------------------------
+// AddDye_from_picture DECLERNATIONS
+
+Texture2D<float4>           _dye_source_texture;
+SamplerState                sampler_dye_source_texture;                      // Needs to be named like this in Unity. Or use one of the basic sampler
+
+//----------------------------------------------------------------------------
+// Function         : AddDye_from_picture
+// Description      : This function adds dye from a texture as a source
+//----------------------------------------------------------------------------
+
+[numthreads(16,16,1)]
+void AddDye_from_picture(uint3 id : SV_DispatchThreadID)
+{
+    float2 uv = float2((float)id.x / (float)i_Resolution, (float)id.y / (float)i_Resolution);
+    _dye_buffer[id2Dto1D(id.xy)]  = _dye_source_texture.SampleLevel(sampler_dye_source_texture, uv, 0.0);
 }
 
 //- ---------------------------

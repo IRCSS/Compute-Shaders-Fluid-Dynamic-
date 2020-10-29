@@ -2,15 +2,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TestDiffuse : MonoBehaviour
+public class TestAddDyeFromTextureAndDiffuse : MonoBehaviour
 {
-    // ------------------------------------------------------------------
+ // ------------------------------------------------------------------
     // VARIABLES
 
     //___________
     // public
     public  FluidSimulater    fluid_simulater;
-    
+    public  Texture2D         source_texture;
+
     //___________
     // private
     private FluidGPUResources resources;
@@ -25,9 +26,10 @@ public class TestDiffuse : MonoBehaviour
         resources.Create();
 
         //--
-        fluid_simulater.AddDye    (resources.dye_buffer);
-        fluid_simulater.Diffuse   (resources.dye_buffer);
-        fluid_simulater.Visualiuse(resources.dye_buffer);
+        fluid_simulater.AddDyeFromTexture(resources.dye_buffer, source_texture, true);
+        fluid_simulater.AddDye           (resources.dye_buffer);
+        fluid_simulater.Diffuse          (resources.dye_buffer);
+        fluid_simulater.Visualiuse       (resources.dye_buffer);
 
         fluid_simulater.BindCommandBuffer();
     }

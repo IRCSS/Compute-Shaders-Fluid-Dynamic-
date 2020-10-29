@@ -49,6 +49,7 @@ public class FluidSimulater
     private int           _handle_Jacobi_Solve;
     private int           _handle_Copy_StructuredBuffer;
     private int           _handle_Clear_StructuredBuffer;
+    private int           _handle_add_dye_from_texture;
 
     // ------------------------------------------------------------------
     // CONSTRUCTOR
@@ -115,6 +116,7 @@ public class FluidSimulater
         // Setting kernel handles
 
         _handle_add_dye                 =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
+        _handle_add_dye_from_texture    =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"         );
         _handle_st2tx                   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
         _handle_Jacobi_Solve            =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
         _handle_Copy_StructuredBuffer   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
@@ -123,7 +125,7 @@ public class FluidSimulater
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
 
-        
+
         // __
 
         UpdateRuntimeKernelParameters();
@@ -159,12 +161,35 @@ public class FluidSimulater
 
     }
 
+
     public void AddDye(ComputeBuffer dye_buffer)
     {
         if (!IsValid()) return;
 
         SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_dye, simulation_dimension, simulation_dimension, 1);
+    }
+
+    public void AddDyeFromTexture(ComputeBuffer dye_buffer, Texture2D source_tex, bool one_time)
+    {
+        if (!IsValid()) return;
+
+        if (one_time)
+        {
+            UserInputShader.SetBuffer (_handle_add_dye_from_texture, "_dye_buffer",         dye_buffer);
+            UserInputShader.SetTexture(_handle_add_dye_from_texture, "_dye_source_texture", source_tex);
+            UserInputShader.SetInt    ("i_Resolution", (int) simulation_dimension);
+            DispatchDimensions group_nums = ComputeShaderUtility.CheckGetDispatchDimensions(UserInputShader, 
+                                _handle_add_dye_from_texture, simulation_dimension, simulation_dimension, 1);
+            UserInputShader.Dispatch(_handle_add_dye_from_texture, 
+                (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
+        }
+        else
+        {
+            SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
+            sim_command_buffer.SetGlobalTexture("_dye_source_texture", source_tex);
+            DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_dye_from_texture, simulation_dimension, simulation_dimension, 1);
+        }
     }
 
     public void Diffuse(ComputeBuffer buffer_to_diffuse)
