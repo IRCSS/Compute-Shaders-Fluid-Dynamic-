@@ -38,5 +38,5 @@ RWStructuredBuffer<float4> _Clear_Target_StructuredBuffer;
 [numthreads(256, 1, 1)]
 void Clear_StructuredBuffer(uint3 id : SV_DispatchThreadID)
 {
-    _Copy_Target[id.x] = _Clear_Value_StructuredBuffer;
+    _Clear_Target_StructuredBuffer[id.x] = _Clear_Value_StructuredBuffer;
 }

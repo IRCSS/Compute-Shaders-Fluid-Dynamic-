@@ -123,13 +123,11 @@ public class FluidSimulater
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
 
-        UserInputShader    .SetInt("i_Resolution", (int) simulation_dimension);
-
+        
         // __
 
         UpdateRuntimeKernelParameters();
-
-        StructuredBufferToTextureShader.SetInt    ("i_Resolution",            (int) simulation_dimension);
+        
         StructuredBufferToTextureShader.SetInt    ("_Results_Resolution",     (int) canvas_dimension    );
         StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results",       visulasation_texture);
 
@@ -140,7 +138,10 @@ public class FluidSimulater
             name = "Simulation_Command_Buffer",
         };
 
-        
+        // Global Parameters that are immutable in runtime
+        sim_command_buffer.SetGlobalInt  ("i_Resolution", (int)simulation_dimension);
+        sim_command_buffer.SetGlobalFloat("i_timeStep",        time_step           );
+
     }
     // ------------------------------------------------------------------
     // LOOP
@@ -175,6 +176,9 @@ public class FluidSimulater
 
         float centerFactor           = grid_scale * grid_scale / (Viscosity * time_step);
         float reciprocal_of_diagonal = 1.0f / (4.0f + centerFactor);
+
+        sim_command_buffer.SetGlobalFloat("_centerFactor",  centerFactor          );
+        sim_command_buffer.SetGlobalFloat("_rDiagonal",     reciprocal_of_diagonal);
 
         bool ping_as_results = false;
 

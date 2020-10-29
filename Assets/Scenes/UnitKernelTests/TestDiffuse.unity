@@ -334,13 +334,13 @@ MonoBehaviour:
       type: 3}
     canvas_dimension: 512
     simulation_dimension: 256
-    solver_iteration_num: 80
+    solver_iteration_num: 50
     grid_scale: 1
     time_step: 1
-    Viscosity: 0.1
+    Viscosity: 0.5
     force_radius: 1
     force_falloff: 2
-    dye_radius: 3
+    dye_radius: 8
     dye_falloff: 6
 --- !u!4 &1430946889
 Transform:
