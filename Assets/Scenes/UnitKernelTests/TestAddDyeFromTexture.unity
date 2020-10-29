@@ -337,10 +337,10 @@ MonoBehaviour:
     solver_iteration_num: 80
     grid_scale: 1
     time_step: 1
-    Viscosity: 0.99
+    Viscosity: 0.01
     force_radius: 1
     force_falloff: 2
-    dye_radius: 5
+    dye_radius: 15
     dye_falloff: 5
   source_texture: {fileID: 2800000, guid: e195a728ef7113746af5177d2b7ffee0, type: 3}
 --- !u!4 &1982990182
