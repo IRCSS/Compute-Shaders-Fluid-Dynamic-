@@ -13,8 +13,8 @@
 //----------------------------------------------------------------------------
 //#define id2Dto1D(m_coord) (m_coord.x + (m_coord.y * (float)i_Resolution))        // I was getting to many compiler issues with a macro
 
-uint id2Dto1D(uint2 m_coord) {
-    return m_coord.x + m_coord.y * i_Resolution;
+int id2Dto1D(int2 m_coord) {
+    return clamp(m_coord.x, 0, i_Resolution - 1 ) + clamp(m_coord.y, 0, i_Resolution - 1 ) * i_Resolution;
 }
 
 
@@ -51,12 +51,12 @@ float4 StructuredBufferBilinearLoad(StructuredBuffer<float4> buffer, float2 coor
 //                    here is passed as a float4 structured buffer, so that the same generic solver can be used
 //                    for possion equation as well as the diffusion equation
 //----------------------------------------------------------------------------
-float4 gradient(StructuredBuffer<float4> scalar_field, float partial_xy, uint2 coord) {
+float4 gradient(StructuredBuffer<float4> scalar_field, float partial_xy, int2 coord) {
     
-    float left     = scalar_field[id2Dto1D(coord - uint2(1, 0))].x;
-    float right    = scalar_field[id2Dto1D(coord + uint2(1, 0))].x;
-    float bottom   = scalar_field[id2Dto1D(coord - uint2(0, 1))].x;
-    float top      = scalar_field[id2Dto1D(coord + uint2(0, 1))].x;
+    float left     = scalar_field[id2Dto1D(coord - int2(1, 0))].x;
+    float right    = scalar_field[id2Dto1D(coord + int2(1, 0))].x;
+    float bottom   = scalar_field[id2Dto1D(coord - int2(0, 1))].x;
+    float top      = scalar_field[id2Dto1D(coord + int2(0, 1))].x;
 
     return float4(right - left, top - bottom, 0.0, 0.0)  / partial_xy;
 

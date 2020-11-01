@@ -28,7 +28,7 @@ float                      _mouse_dye_radius;
 
 //----------------------------------------------------------------------------
 // Function         : AddDye
-// Description      : This function adds dye on the structured buffer that contains 
+// Description      : This function adds dye on the structured buffer that contains  
 //                    The dye quanitaty. It runs once per grid cell on the simulation
 //                    grid
 //----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ SamplerState                sampler_dye_source_texture;                      // 
 [numthreads(16,16,1)]
 void AddDye_from_picture(uint3 id : SV_DispatchThreadID)
 {
-    float2 uv = float2((float)id.x / (float)i_Resolution, (float)id.y / (float)i_Resolution);
+    float2 uv = float2((float)id.x / (float)(i_Resolution-1), (float)id.y / (float)(i_Resolution-1));
     _dye_buffer[id2Dto1D(id.xy)]  = _dye_source_texture.SampleLevel(sampler_dye_source_texture, uv, 0.0);
 }
 

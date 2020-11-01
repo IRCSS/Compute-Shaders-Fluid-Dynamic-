@@ -44,15 +44,16 @@ float                        _centerFactor;                          // it is th
 void Jacobi_Solve(uint3 id : SV_DispatchThreadID)
 {
 
-    uint2  coordinate = id.xy;
+    int2  coordinate = id.xy;
 
 
-    float4 left     = _updated_x_buffer[id2Dto1D(coordinate - uint2(1, 0))];
-    float4 right    = _updated_x_buffer[id2Dto1D(coordinate + uint2(1, 0))];
-    float4 bottom   = _updated_x_buffer[id2Dto1D(coordinate - uint2(0, 1))];
-    float4 top      = _updated_x_buffer[id2Dto1D(coordinate + uint2(0, 1))];
+    float4 left     = _updated_x_buffer[id2Dto1D(coordinate - int2(1, 0))];
+    float4 right    = _updated_x_buffer[id2Dto1D(coordinate + int2(1, 0))];
+    float4 bottom   = _updated_x_buffer[id2Dto1D(coordinate - int2(0, 1))];
+    float4 top      = _updated_x_buffer[id2Dto1D(coordinate + int2(0, 1))];
 
     float4 b_center = _b_buffer[id2Dto1D(coordinate)];
 
     _results[id2Dto1D(coordinate)] = (left + right + bottom + top + (_centerFactor * b_center)) * _rDiagonal;
+   //_results[id2Dto1D(coordinate)] = float4(coordinate.xy / (float)(i_Resolution - 1), 0., 0.);
 }
