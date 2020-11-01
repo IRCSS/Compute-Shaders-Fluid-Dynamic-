@@ -34,6 +34,7 @@ public class FluidSimulater
     public float         grid_scale           = 1;
     public float         time_step            = 1;
     public float         Viscosity            = 0.5f;
+    public float         force_strength       = 1.0f;
     public float         force_radius         = 1;
     public float         force_falloff        = 2;
     public float         dye_radius           = 1.0f;
@@ -56,7 +57,9 @@ public class FluidSimulater
     private int           _handle_Clear_StructuredBuffer;
     private int           _handle_add_dye_from_texture;
     private int           _handle_NeuMannBoundary;
+    private int           _handle_addForceWithMouse;
 
+    private Vector2       mouse_previus_pos;
     // ------------------------------------------------------------------
     // CONSTRUCTOR
 
@@ -111,6 +114,10 @@ public class FluidSimulater
         main_cam.orthographicSize = 1;
 
         // -----------------------
+        
+        mouse_previus_pos = GetCurrentMouseInSimulationSpace();
+
+        // -----------------------
         visulasation_texture = new RenderTexture((int) canvas_dimension, (int)canvas_dimension, 0)
         {
             enableRandomWrite = true,
@@ -128,6 +135,7 @@ public class FluidSimulater
         _handle_Copy_StructuredBuffer   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
         _handle_Clear_StructuredBuffer  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
         _handle_NeuMannBoundary         =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
+        _handle_addForceWithMouse       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
 
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
@@ -165,7 +173,8 @@ public class FluidSimulater
 
     public void AddUserForce(ComputeBuffer force_buffer)
     {
-
+        SetBufferOnCommandList(sim_command_buffer, force_buffer, "_user_applied_force_buffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_addForceWithMouse, simulation_dimension, simulation_dimension, 1);
     }
 
 
@@ -320,24 +329,37 @@ public class FluidSimulater
         UserInputShader.SetFloat ("_mouse_dye_radius",  dye_radius                      );
         UserInputShader.SetFloat ("_mouse_dye_falloff", dye_falloff                     );
 
+        // USER INPUT ADD FORCE WITH MOUSE
+        UserInputShader.SetFloat ("_force_multiplier",    force_strength                );
+        UserInputShader.SetFloat ("_force_effect_radius", force_radius                  );
+        UserInputShader.SetFloat ("_force_falloff",       force_falloff                 );
+
         float mouse_pressed = 0.0f;
 
         if (Input.GetKey(KeyCode.Mouse0)) mouse_pressed = 1.0f;
 
         UserInputShader.SetFloat("_mouse_pressed", mouse_pressed);
 
-        Vector3 mouse_pos_pixel_coord = Input.mousePosition;
-        Vector2 mouse_pos_normalized  = main_cam.ScreenToViewportPoint(mouse_pos_pixel_coord);
-                mouse_pos_normalized  = new Vector2(Mathf.Clamp01(mouse_pos_normalized.x), Mathf.Clamp01(mouse_pos_normalized.y));
-        Vector2 mouse_pos_struct_pos  = new Vector2(mouse_pos_normalized.x * simulation_dimension, mouse_pos_normalized.y * simulation_dimension);
+        Vector2 mouse_pos_struct_pos = GetCurrentMouseInSimulationSpace();
 
-        UserInputShader.SetVector("_mouse_position", mouse_pos_struct_pos);                   // Pass on the mouse position already in the coordinate system of the structured buffer as 2D coord
+        UserInputShader.SetVector("_mouse_position",    mouse_pos_struct_pos);                   // Pass on the mouse position already in the coordinate system of the structured buffer as 2D coord
+        UserInputShader.SetVector("_mouse_pos_current", mouse_pos_struct_pos);                   // Pass on the mouse position already in the coordinate system of the structured buffer as 2D coord
+        UserInputShader.SetVector("_mouse_pos_prev",    mouse_previus_pos);                      // Pass on the mouse position already in the coordinate system of the structured buffer as 2D coord
 
+        mouse_previus_pos = mouse_pos_struct_pos;
     }
 
     // _______________
+
+
     public bool IsValid()
     {
+        if (StokeNavierShader               == null) { Debug.LogError("ERROR: The Stoke Navier Compute Shader reference is not set in inspector");                   return false;}
+        if (SolverShader                    == null) { Debug.LogError("ERROR: The Solver Compute Shader Shader reference is not set in inspector");                  return false;}
+        if (BorderShader                    == null) { Debug.LogError("ERROR: The Border Compute Shader reference is not set in inspector");                         return false;}
+        if (StructuredBufferToTextureShader == null) { Debug.LogError("ERROR: The  User Input Compute Shader reference is not set in inspector");                    return false;}
+        if (UserInputShader                 == null) { Debug.LogError("ERROR: The Structured Buffer To Texture Compute Shader reference is not set in inspector");   return false;}
+        if (StructuredBufferUtilityShader   == null) { Debug.LogError("ERROR: The Structured BufferUtility Compute Shader reference is not set in inspector");       return false;}
 
         if (sim_command_buffer   == null) { Debug.LogError("ERROR: The Fluid Simulater Object is not correctly initalized. The CommandBuffer is NULL");        return false;}
         if (visulasation_texture == null) { Debug.LogError("ERROR: The Fluid Simulater Object is not correctly initalized. The visulasation Texture is NULL"); return false;}
@@ -346,6 +368,14 @@ public class FluidSimulater
         return true;
     }
 
+
+    private Vector2 GetCurrentMouseInSimulationSpace()
+    {
+        Vector3 mouse_pos_pixel_coord = Input.mousePosition;
+        Vector2 mouse_pos_normalized  = main_cam.ScreenToViewportPoint(mouse_pos_pixel_coord);
+                mouse_pos_normalized  = new Vector2(Mathf.Clamp01(mouse_pos_normalized.x), Mathf.Clamp01(mouse_pos_normalized.y));
+        return new Vector2(mouse_pos_normalized.x * simulation_dimension, mouse_pos_normalized.y * simulation_dimension);
+    }
 
     private void SetBufferOnCommandList(CommandBuffer cb, ComputeBuffer buffer, string buffer_name)
     {
