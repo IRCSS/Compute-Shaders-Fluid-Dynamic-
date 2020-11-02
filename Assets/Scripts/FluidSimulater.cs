@@ -58,6 +58,7 @@ public class FluidSimulater
     private int           _handle_add_dye_from_texture;
     private int           _handle_NeuMannBoundary;
     private int           _handle_addForceWithMouse;
+    private int           _handle_advection;
 
     private Vector2       mouse_previus_pos;
     // ------------------------------------------------------------------
@@ -136,6 +137,9 @@ public class FluidSimulater
         _handle_Clear_StructuredBuffer  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
         _handle_NeuMannBoundary         =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
         _handle_addForceWithMouse       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
+        _handle_advection               =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
+
+
 
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
@@ -158,6 +162,7 @@ public class FluidSimulater
         // Global Parameters that are immutable in runtime
         sim_command_buffer.SetGlobalInt  ("i_Resolution", (int)simulation_dimension);
         sim_command_buffer.SetGlobalFloat("i_timeStep",        time_step           );
+        sim_command_buffer.SetGlobalFloat("i_grid_scale",      grid_scale          );
 
     }
     // ------------------------------------------------------------------
@@ -259,8 +264,30 @@ public class FluidSimulater
         
     }
 
-    public void Advect(ComputeBuffer buffer_to_advect, ComputeBuffer velocity_buffer)
+    public void Advect(ComputeBuffer buffer_to_advect, ComputeBuffer velocity_buffer, float disspationFactor)
     {
+        if (!IsValid()) return;
+
+        sim_command_buffer.SetGlobalFloat("_dissipationFactor", disspationFactor);
+
+        SetBufferOnCommandList(sim_command_buffer, velocity_buffer,               "_velocity_field_buffer" );
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_advect,              "_field_to_advect_buffer");
+        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_new_advected_field"    );
+
+        
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StokeNavierShader, _handle_advection, simulation_dimension, simulation_dimension, 1);
+
+        // -------------
+        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_advect,              "_Copy_Target");
+
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+
+        // -------------
+        sim_command_buffer.SetGlobalVector("_Clear_Value_StructuredBuffer", new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Clear_Target_StructuredBuffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Clear_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+
 
     }
 
@@ -325,7 +352,10 @@ public class FluidSimulater
     {
         // ------------------------------------------------------------------------------
         // USER INPUT ADD DYE 
-        UserInputShader.SetVector("_dye_color",         Color.HSVToRGB(0.2f, 0.8f, 0.6f));
+        //UserInputShader.SetVector("_dye_color",         Color.HSVToRGB(0.2f, 0.8f, 0.6f));
+        float randomHue = Mathf.Abs(Mathf.Sin(Time.time * 0.8f + 1.2f) + Mathf.Sin(Time.time * 0.7f + 2.0f));
+              randomHue = randomHue - Mathf.Floor(randomHue);
+        UserInputShader.SetVector("_dye_color", Color.HSVToRGB(randomHue, Mathf.Abs(Mathf.Sin(Time.time * 0.8f + 1.2f))*0.3f + 0.5f, Mathf.Abs(Mathf.Sin(Time.time * 0.7f + 2.0f)) * 0.3f + 0.5f));
         UserInputShader.SetFloat ("_mouse_dye_radius",  dye_radius                      );
         UserInputShader.SetFloat ("_mouse_dye_falloff", dye_falloff                     );
 

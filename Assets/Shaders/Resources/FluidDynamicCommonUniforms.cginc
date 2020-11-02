@@ -2,6 +2,7 @@
 #define __FLUID_DYNAMIC_COMMON__
 
 int   i_Resolution;
+float i_grid_scale;
 float i_timeStep;
 
 
