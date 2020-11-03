@@ -319,7 +319,7 @@ public class FluidSimulater
 
         sim_command_buffer.SetGlobalFloat("_neumaboundary_scale", scale);
         SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn, "_neumaboundary_field_to_contain");
-        
+        DispatchComputeOnCommandBuffer(sim_command_buffer, BorderShader, _handle_NeuMannBoundary, simulation_dimension * 4, 1, 1);
     }
 
     public bool BindCommandBuffer()
@@ -332,8 +332,10 @@ public class FluidSimulater
     // ------------------------------------------------------------------
     // HELPER FUNCTIONS
 
-    private void Diverge()
+    private void Diverge(ComputeShader field_to_calculate, ComputeShader divergnece_buffer)
     {
+        
+
 
     }
 

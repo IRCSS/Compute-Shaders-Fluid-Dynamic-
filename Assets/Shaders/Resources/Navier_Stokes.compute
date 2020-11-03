@@ -90,7 +90,7 @@ RWStructuredBuffer<float4>   _divergence_values;                            // T
 [numthreads(16, 16, 1)]                                                     // runs once per cell of the vector field
 void divergence(uint3 id : SV_DispatchThreadID)
 {                                                                           
-    float partialXY = 2. * i_Resolution;
+    float partialXY = 2. * i_grid_scale;
     int2  coord     = id.xy;                                                // one to one mapping between thread ids in the dispatch and the structured buffer
 
     float4 left     = _vector_field[id2Dto1D(coord - int2(1, 0))];
@@ -123,7 +123,7 @@ RWStructuredBuffer<float4>  _divergence_free_field;                         // t
 [numthreads(16, 16, 1)]                                                     // runs once per cell of the vector field
 void calculate_divergence_free(uint3 id : SV_DispatchThreadID)
 {                                                                           
-     float partialXY = 2. * i_Resolution;
+     float partialXY = 2. * i_grid_scale;
      int2 coord      = id.xy;                                               // one to one mapping between thread ids in the dispatch and the structured buffer
 
      float4 gradient_value = gradient(_pressure_field, partialXY, coord);
