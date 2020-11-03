@@ -59,6 +59,7 @@ public class FluidSimulater
     private int           _handle_NeuMannBoundary;
     private int           _handle_addForceWithMouse;
     private int           _handle_advection;
+    private int           _handle_divergence;
 
     private Vector2       mouse_previus_pos;
     // ------------------------------------------------------------------
@@ -138,7 +139,7 @@ public class FluidSimulater
         _handle_NeuMannBoundary         =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
         _handle_addForceWithMouse       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
         _handle_advection               =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
-
+        _handle_divergence              =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
 
 
         // -----------------------
@@ -332,10 +333,12 @@ public class FluidSimulater
     // ------------------------------------------------------------------
     // HELPER FUNCTIONS
 
-    private void Diverge(ComputeShader field_to_calculate, ComputeShader divergnece_buffer)
+    private void Diverge(ComputeBuffer field_to_calculate, ComputeBuffer divergnece_buffer)
     {
-        
 
+        SetBufferOnCommandList(sim_command_buffer, field_to_calculate, "_divergence_vector_field");        // Input
+        SetBufferOnCommandList(sim_command_buffer, divergnece_buffer,  "_divergence_values");              // Output
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StokeNavierShader, _handle_divergence, simulation_dimension, simulation_dimension, 1);
 
     }
 

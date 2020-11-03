@@ -70,7 +70,7 @@ void advection(uint3 id : SV_DispatchThreadID)
 
 // DIVERGENCE DECLERNATIONS
 
-StructuredBuffer<float4>     _vector_field;                                 // This is the vector field which we want to calculate the divergence of, the members of the array are quanteties in this vector field
+StructuredBuffer<float4>     _divergence_vector_field;                      // This is the vector field which we want to calculate the divergence of, the members of the array are quanteties in this vector field
 RWStructuredBuffer<float4>   _divergence_values;                            // The results are written to this buffer
 
 
