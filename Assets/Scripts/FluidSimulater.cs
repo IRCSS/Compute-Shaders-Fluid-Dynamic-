@@ -259,11 +259,9 @@ public class FluidSimulater
             SetBufferOnCommandList(sim_command_buffer, buffer_to_diffuse,             "_Copy_Target");
             DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
         }
-
-        sim_command_buffer.SetGlobalVector("_Clear_Value_StructuredBuffer", new Vector4(0.0f,0.0f,0.0f,0.0f));
-        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Clear_Target_StructuredBuffer");
-        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Clear_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
         
+        ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+
     }
 
     public void Advect(ComputeBuffer buffer_to_advect, ComputeBuffer velocity_buffer, float disspationFactor)
@@ -286,15 +284,70 @@ public class FluidSimulater
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
 
         // -------------
-        sim_command_buffer.SetGlobalVector("_Clear_Value_StructuredBuffer", new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
-        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Clear_Target_StructuredBuffer");
-        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Clear_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+        ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
 
 
     }
 
-    public void Project(ComputeBuffer buffer_to_visualize)
+    public void Project(ComputeBuffer buffer_to_make_divergence_free, ComputeBuffer divergence_field, ComputeBuffer pressure_field)
     {
+        if (!IsValid())                                  return;
+        if (!FluidGPUResources.StaticResourcesCreated()) return;
+
+        CalculateFieldDivergence(buffer_to_make_divergence_free, divergence_field);
+
+        // ---------------
+
+        float centerFactor   = -1.0f * grid_scale * grid_scale;
+        float diagonalFactor = 0.25f;
+
+        sim_command_buffer.SetGlobalFloat("_centerFactor", centerFactor);
+        sim_command_buffer.SetGlobalFloat("_rDiagonal",    diagonalFactor);
+
+        SetBufferOnCommandList(sim_command_buffer, divergence_field, "_b_buffer");
+
+        ClearBuffer(pressure_field, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+
+        
+        bool ping_as_results = false;
+
+        for (int i = 0; i < solver_iteration_num; i++)
+        {
+            ping_as_results = !ping_as_results;
+            if (ping_as_results)                     // Ping ponging back and forth to insure no racing condition. 
+            {
+                HandleCornerBoundaries(pressure_field, FieldType.Pressure);
+                SetBufferOnCommandList(sim_command_buffer, pressure_field,                 "_updated_x_buffer");
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping,  "_results");
+            } else
+            {
+                HandleCornerBoundaries(FluidGPUResources.buffer_ping, FieldType.Pressure);
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping,  "_updated_x_buffer");
+                SetBufferOnCommandList(sim_command_buffer, pressure_field,                 "_results");
+            }
+
+            sim_command_buffer.SetGlobalInt("_current_iteration", i);
+            DispatchComputeOnCommandBuffer(sim_command_buffer, SolverShader, _handle_Jacobi_Solve, simulation_dimension, simulation_dimension, 1);
+        }
+
+        if (ping_as_results)                         // The Ping ponging ended on the helper buffer ping. Copy it to the buffer_to_diffuse buffer
+        {
+            SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
+            SetBufferOnCommandList(sim_command_buffer, pressure_field,                "_Copy_Target");
+            DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+        }
+        
+        ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+
+        // ---------------
+
+        CalculateDivergenceFreeFromPressureField(buffer_to_make_divergence_free, pressure_field, FluidGPUResources.buffer_pong, FluidGPUResources.buffer_ping);
+
+        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping,  "_Copy_Source");
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_make_divergence_free, "_Copy_Target");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+
+        ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
 
     }
 
@@ -353,11 +406,12 @@ public class FluidSimulater
         DispatchComputeOnCommandBuffer(sim_command_buffer, StokeNavierShader, _handle_calculate_divergence_free, simulation_dimension, simulation_dimension, 1);
     }
 
-    private void Solve()
+    private void ClearBuffer(ComputeBuffer buffer, Vector4 clear_value)
     {
-
+        sim_command_buffer.SetGlobalVector("_Clear_Value_StructuredBuffer", new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+        SetBufferOnCommandList(sim_command_buffer, buffer, "_Clear_Target_StructuredBuffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Clear_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
     }
-
 
     private void UpdateRuntimeKernelParameters()
     {

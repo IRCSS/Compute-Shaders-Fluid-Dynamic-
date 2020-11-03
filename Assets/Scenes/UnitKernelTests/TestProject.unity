@@ -260,6 +260,7 @@ MonoBehaviour:
     force_falloff: 5
     dye_radius: 18
     dye_falloff: 10
+  source_texture: {fileID: 2800000, guid: e195a728ef7113746af5177d2b7ffee0, type: 3}
 --- !u!4 &1025801093
 Transform:
   m_ObjectHideFlags: 0
