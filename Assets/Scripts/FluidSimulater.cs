@@ -60,6 +60,7 @@ public class FluidSimulater
     private int           _handle_addForceWithMouse;
     private int           _handle_advection;
     private int           _handle_divergence;
+    private int           _handle_calculate_divergence_free;
 
     private Vector2       mouse_previus_pos;
     // ------------------------------------------------------------------
@@ -130,17 +131,17 @@ public class FluidSimulater
         // -----------------------
         // Setting kernel handles
 
-        _handle_add_dye                 =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
-        _handle_add_dye_from_texture    =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"         );
-        _handle_st2tx                   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
-        _handle_Jacobi_Solve            =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
-        _handle_Copy_StructuredBuffer   =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
-        _handle_Clear_StructuredBuffer  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
-        _handle_NeuMannBoundary         =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
-        _handle_addForceWithMouse       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
-        _handle_advection               =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
-        _handle_divergence              =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
-
+        _handle_add_dye                     =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
+        _handle_add_dye_from_texture        =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"         );
+        _handle_st2tx                       =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
+        _handle_Jacobi_Solve                =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
+        _handle_Copy_StructuredBuffer       =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
+        _handle_Clear_StructuredBuffer      =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
+        _handle_NeuMannBoundary             =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
+        _handle_addForceWithMouse           =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
+        _handle_advection                   =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
+        _handle_divergence                  =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
+        _handle_calculate_divergence_free   =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "calculate_divergence_free"   );
 
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
@@ -333,7 +334,7 @@ public class FluidSimulater
     // ------------------------------------------------------------------
     // HELPER FUNCTIONS
 
-    private void Diverge(ComputeBuffer field_to_calculate, ComputeBuffer divergnece_buffer)
+    private void CalculateFieldDivergence(ComputeBuffer field_to_calculate, ComputeBuffer divergnece_buffer)
     {
 
         SetBufferOnCommandList(sim_command_buffer, field_to_calculate, "_divergence_vector_field");        // Input
@@ -342,9 +343,14 @@ public class FluidSimulater
 
     }
 
-    private void Gradient()
+    private void CalculateDivergenceFreeFromPressureField(ComputeBuffer non_zero_vector_field, ComputeBuffer pressure_field, ComputeBuffer debug_pressure_gradient, ComputeBuffer divergence_free)
     {
+        SetBufferOnCommandList(sim_command_buffer, non_zero_vector_field,   "_non_zero_divergence_velocity_field");        // Input
+        SetBufferOnCommandList(sim_command_buffer, pressure_field,          "_pressure_field"                    );        // Input
+        SetBufferOnCommandList(sim_command_buffer, debug_pressure_gradient, "_pressure_gradient"                 );        // Output
+        SetBufferOnCommandList(sim_command_buffer, divergence_free,         "_divergence_free_field"             );        // Output
 
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StokeNavierShader, _handle_calculate_divergence_free, simulation_dimension, simulation_dimension, 1);
     }
 
     private void Solve()

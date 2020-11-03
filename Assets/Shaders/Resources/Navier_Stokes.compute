@@ -93,10 +93,10 @@ void divergence(uint3 id : SV_DispatchThreadID)
     float partialXY = 2. * i_grid_scale;
     int2  coord     = id.xy;                                                // one to one mapping between thread ids in the dispatch and the structured buffer
 
-    float4 left     = _vector_field[id2Dto1D(coord - int2(1, 0))];
-    float4 right    = _vector_field[id2Dto1D(coord + int2(1, 0))];
-    float4 bottom   = _vector_field[id2Dto1D(coord - int2(0, 1))];
-    float4 top      = _vector_field[id2Dto1D(coord + int2(0, 1))];
+    float4 left     = _divergence_vector_field[id2Dto1D(coord - int2(1, 0))];
+    float4 right    = _divergence_vector_field[id2Dto1D(coord + int2(1, 0))];
+    float4 bottom   = _divergence_vector_field[id2Dto1D(coord - int2(0, 1))];
+    float4 top      = _divergence_vector_field[id2Dto1D(coord + int2(0, 1))];
 
     _divergence_values[id2Dto1D(coord)] = 
                        (right - left + top - bottom) *  1. / partialXY;
