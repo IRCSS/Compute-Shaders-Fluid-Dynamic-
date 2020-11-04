@@ -27,7 +27,7 @@ float4 StructuredBufferBilinearLoad(StructuredBuffer<float4> buffer, float2 coor
 {
     float4 closest_grid_coords;
 
-    closest_grid_coords.xy = floor(coord - 0.5) + 0.5;                  // Get the left and lower closest grid centers
+    closest_grid_coords.xy = floor(coord - 0.5);                        // Get the left and lower closest grid centers
     closest_grid_coords.zw = closest_grid_coords.xy + float2(1., 1.);   // Right, upper closest grid centers
 
     float2 lerp_factors    = coord - closest_grid_coords.xy;            // Get the fractional part of the actual sample position to the closest left-down sided grid center

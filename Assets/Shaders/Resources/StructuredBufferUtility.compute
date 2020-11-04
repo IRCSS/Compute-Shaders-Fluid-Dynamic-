@@ -24,7 +24,7 @@ RWStructuredBuffer<float4> _Copy_Target;
 void Copy_StructuredBuffer(uint3 id : SV_DispatchThreadID)
 {
     _Copy_Target[id.x] = _Copy_Source[id.x];
-}
+} 
 
 //____________________________________________________________________________________
 // Clear_StructuredBuffer DECLERNATIONS 

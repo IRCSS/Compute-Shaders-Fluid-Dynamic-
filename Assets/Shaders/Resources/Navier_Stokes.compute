@@ -58,11 +58,11 @@ void advection(uint3 id : SV_DispatchThreadID)
     
     
     advection_source_coord = clamp(advection_source_coord,                  // Handling the case where the velocity traces back to outside the bounds of the buffer
-                                   0.5, i_Resolution - 0.5);                // left hand side ensures the smallest element to read is element , and the biggest n-1
+                                   0.0, i_Resolution - 1.0);                // left hand side ensures the smallest element to read is element , and the biggest n-1
     
-    _new_advected_field[id2Dto1D(coord)] = _dissipationFactor *             // Disspation factor 1 = lasts forever, 0 = instantly dissipates, dunno how physcilly accurate this is. 
-                                           StructuredBufferBilinearLoad(_field_to_advect_buffer, advection_source_coord);
-
+   // _new_advected_field[id2Dto1D(coord)] = _dissipationFactor *             // Disspation factor 1 = lasts forever, 0 = instantly dissipates, dunno how physcilly accurate this is. 
+   //                                        StructuredBufferBilinearLoad(_field_to_advect_buffer, advection_source_coord);
+    _new_advected_field[id2Dto1D(coord)] = _dissipationFactor * _field_to_advect_buffer[id2Dto1D(advection_source_coord)];
 }
 
 

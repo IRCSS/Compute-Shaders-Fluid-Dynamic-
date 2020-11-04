@@ -32,16 +32,16 @@ public class TestProject : MonoBehaviour
 
         fluid_simulater.AddUserForce          (resources.velocity_buffer                                   );
         fluid_simulater.HandleCornerBoundaries(resources.velocity_buffer, FieldType.Velocity               );
-        fluid_simulater.Advect                (resources.velocity_buffer, resources.velocity_buffer, 0.995f);
+        fluid_simulater.Advect                (resources.velocity_buffer, resources.velocity_buffer, 1.0f  );
         fluid_simulater.HandleCornerBoundaries(resources.velocity_buffer, FieldType.Velocity               );
         fluid_simulater.Diffuse               (resources.velocity_buffer                                   );
         fluid_simulater.HandleCornerBoundaries(resources.velocity_buffer, FieldType.Velocity               );
         fluid_simulater.Project               (resources.velocity_buffer,resources.divergence_buffer, resources.pressure_buffer);
 
         fluid_simulater.AddDye                 (resources.dye_buffer                                       );
-        fluid_simulater.Advect                 (resources.dye_buffer, resources.velocity_buffer, 0.985f    );
+        fluid_simulater.Advect                 (resources.dye_buffer, resources.velocity_buffer, 0.995f    );
         fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye                        );
-        //fluid_simulater.Diffuse                (resources.dye_buffer                                       );
+        fluid_simulater.Diffuse                (resources.dye_buffer                                       );
         fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye                        );
 
         fluid_simulater.Visualiuse             (resources.dye_buffer);
