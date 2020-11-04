@@ -99,7 +99,7 @@ void divergence(uint3 id : SV_DispatchThreadID)
     float4 top      = _divergence_vector_field[id2Dto1D(coord + int2(0, 1))];
 
     _divergence_values[id2Dto1D(coord)] = 
-                       (right - left + top - bottom) *  1. / partialXY;
+                       ((right.x - left.x + top.y - bottom.y) *  1. / partialXY).xxxx;
 }
     
 // _______________________________

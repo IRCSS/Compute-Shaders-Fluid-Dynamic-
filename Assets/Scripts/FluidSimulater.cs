@@ -348,7 +348,7 @@ public class FluidSimulater
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
 
         ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
-
+        ClearBuffer(FluidGPUResources.buffer_pong, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
     public void Visualiuse(ComputeBuffer buffer_to_visualize)
@@ -391,7 +391,7 @@ public class FluidSimulater
     {
 
         SetBufferOnCommandList(sim_command_buffer, field_to_calculate, "_divergence_vector_field");        // Input
-        SetBufferOnCommandList(sim_command_buffer, divergnece_buffer,  "_divergence_values");              // Output
+        SetBufferOnCommandList(sim_command_buffer, divergnece_buffer,  "_divergence_values"      );        // Output
         DispatchComputeOnCommandBuffer(sim_command_buffer, StokeNavierShader, _handle_divergence, simulation_dimension, simulation_dimension, 1);
 
     }
@@ -425,7 +425,12 @@ public class FluidSimulater
         UserInputShader.SetFloat ("_mouse_dye_falloff", dye_falloff                     );
 
         // USER INPUT ADD FORCE WITH MOUSE
-        UserInputShader.SetFloat ("_force_multiplier",    force_strength                );
+
+        float forceController = 0;
+
+        if (Input.GetKey(KeyCode.Mouse1)) forceController = force_strength;
+
+        UserInputShader.SetFloat ("_force_multiplier",    forceController               );
         UserInputShader.SetFloat ("_force_effect_radius", force_radius                  );
         UserInputShader.SetFloat ("_force_falloff",       force_falloff                 );
 
