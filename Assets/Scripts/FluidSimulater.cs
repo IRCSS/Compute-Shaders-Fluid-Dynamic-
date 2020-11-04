@@ -420,15 +420,15 @@ public class FluidSimulater
         //UserInputShader.SetVector("_dye_color",         Color.HSVToRGB(0.2f, 0.8f, 0.6f));
         float randomHue = Mathf.Abs(Mathf.Sin(Time.time * 0.8f + 1.2f) + Mathf.Sin(Time.time * 0.7f + 2.0f));
               randomHue = randomHue - Mathf.Floor(randomHue);
-        UserInputShader.SetVector("_dye_color", Color.HSVToRGB(randomHue, Mathf.Abs(Mathf.Sin(Time.time * 0.8f + 1.2f))*0.3f + 0.5f, Mathf.Abs(Mathf.Sin(Time.time * 0.7f + 2.0f)) * 0.3f + 0.5f));
+        UserInputShader.SetVector("_dye_color", Color.HSVToRGB(randomHue, Mathf.Abs(Mathf.Sin(Time.time * 0.8f + 1.2f))*0.2f + 0.8f, Mathf.Abs(Mathf.Sin(Time.time * 0.7f + 2.0f)) * 0.2f + 0.5f));
         UserInputShader.SetFloat ("_mouse_dye_radius",  dye_radius                      );
         UserInputShader.SetFloat ("_mouse_dye_falloff", dye_falloff                     );
 
         // USER INPUT ADD FORCE WITH MOUSE
 
-        float forceController = 0;
+        float forceController = 1;
 
-        if (Input.GetKey(KeyCode.Mouse1)) forceController = force_strength;
+        //if (Input.GetKey(KeyCode.Mouse1)) forceController = force_strength;
 
         UserInputShader.SetFloat ("_force_multiplier",    forceController               );
         UserInputShader.SetFloat ("_force_effect_radius", force_radius                  );
