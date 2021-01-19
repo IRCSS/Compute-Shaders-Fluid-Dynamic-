@@ -1,0 +1,42 @@
+﻿// KERNELS CONTAINTING UTILITY FOR STRUCTURED BUFFER
+
+//____________________________________________________________________________________
+// KERNELS
+#pragma kernel Copy_StructuredBuffer
+#pragma kernel Clear_StructuredBuffer
+
+
+//____________________________________________________________________________________
+// MAIN FUNCTIONS
+
+//____________________________________________________________________________________
+// Copy_StructuredBuffer DECLERNATIONS 
+StructuredBuffer<float4>   _Copy_Source;
+RWStructuredBuffer<float4> _Copy_Target;
+
+//----------------------------------------------------------------------------
+// Function         : CopyStructuredBuffer
+// Description      : A simple copy that uses a one dimensional dispatch to copy a structured buffer
+//                    in another. This is mainly for use in command buffers as there is a native copy
+//                    copy command exposed on graphics, compute shader / buffers types.
+//----------------------------------------------------------------------------
+[numthreads(256,1,1)]
+void Copy_StructuredBuffer(uint3 id : SV_DispatchThreadID)
+{
+    _Copy_Target[id.x] = _Copy_Source[id.x];
+} 
+
+//____________________________________________________________________________________
+// Clear_StructuredBuffer DECLERNATIONS 
+float4                     _Clear_Value_StructuredBuffer;
+RWStructuredBuffer<float4> _Clear_Target_StructuredBuffer;
+//----------------------------------------------------------------------------
+// Function         : Clear_StructuredBuffer
+// Description      : Kernel used to clear a structured buffer to a specific value. 
+//                    Again mostly used for Command buffer use.
+//----------------------------------------------------------------------------
+[numthreads(256, 1, 1)]
+void Clear_StructuredBuffer(uint3 id : SV_DispatchThreadID)
+{
+    _Clear_Target_StructuredBuffer[id.x] = _Clear_Value_StructuredBuffer;
+}

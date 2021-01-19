@@ -426,9 +426,9 @@ public class FluidSimulater
 
         // USER INPUT ADD FORCE WITH MOUSE
 
-        float forceController = 1;
+        float forceController = 0;
 
-        //if (Input.GetKey(KeyCode.Mouse1)) forceController = force_strength;
+        if (Input.GetKey(KeyCode.Mouse1)) forceController = force_strength;
 
         UserInputShader.SetFloat ("_force_multiplier",    forceController               );
         UserInputShader.SetFloat ("_force_effect_radius", force_radius                  );

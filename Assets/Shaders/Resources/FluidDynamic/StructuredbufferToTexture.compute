@@ -1,0 +1,40 @@
+﻿// THIS FILE CONTAINS UTILITY FOR CONVERTING A STRUCTURED BUFFER FOR RENDER TEXTURE FOR THE PORPUSE OF VISUALISATION
+
+
+//____________________________________________________________________________________
+// KERNELS
+#pragma kernel StructeredToTextureBillinear
+
+//____________________________________________________________________________________
+// DECLERNATIONS
+#include "FluidDynamicCommonUniforms.cginc"
+
+//____________________________________________________________________________________
+// HELPER FUNCTIONS
+#include "FluidDynamicUtility.cginc"
+
+//____________________________________________________________________________________
+// MAIN FUNCTIONS
+
+// StructeredToTextureBillinear DECLERNATIONS
+
+StructuredBuffer<float4>   _Source;
+RWTexture2D<float4>        _Results;
+int                        _Results_Resolution;
+
+//----------------------------------------------------------------------------
+// Function         : AddDye
+// Description      : This kernel blits a structured buffer on top of a render texture
+//                    for visualisation. It runs once per pixel of the target render texture
+//                    and in case the the render texture is higher res than the source, it bilinearly
+//                    interpolates between the closest structuredbuffer entries
+//----------------------------------------------------------------------------
+[numthreads(16,16,1)]
+void StructeredToTextureBillinear(uint3 id : SV_DispatchThreadID)
+{
+    float2 coord  = (float2)id.xy / (float)(_Results_Resolution -1 );          // first normailizing the thread ids based on the targets resoltuion
+           coord *= (float) (i_Resolution-1);                                  // remapping it to the coordinates of the structured buffer, but still as 2D ids. 
+
+    _Results[id.xy] = StructuredBufferBilinearLoad(_Source, coord);
+
+}
