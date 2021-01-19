@@ -112,9 +112,9 @@ public class FluidSimulater
         main_cam = Camera.main;
         if (main_cam == null) Debug.LogError("Could not find main camera, make sure the camera is tagged as main");
         
-        main_cam.orthographic     = true;                                                                     // Make sure the camera is ortho. Perspecitve camera has a transformation matrix which will screw with everything
-        main_cam.aspect           = 1.0f;
-        main_cam.orthographicSize = 1;
+        //main_cam.orthographic     = true;                                                                     // Make sure the camera is ortho. Perspecitve camera has a transformation matrix which will screw with everything
+        //main_cam.aspect           = 1.0f;
+        //main_cam.orthographicSize = 1;
 
         // -----------------------
         
@@ -356,9 +356,24 @@ public class FluidSimulater
         if (!IsValid()) return;
 
         SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
+        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", visulasation_texture);
+
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
+
         sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget);
 
+    }
+
+    public void CopyBufferToTexture(RenderTexture texture, ComputeBuffer buffer_to_visualize)
+    {
+        if (!IsValid()) return;
+
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
+        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", texture);
+
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
+
+        sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget);
     }
 
     public void HandleCornerBoundaries(ComputeBuffer SetBoundaryOn, FieldType fieldType)
