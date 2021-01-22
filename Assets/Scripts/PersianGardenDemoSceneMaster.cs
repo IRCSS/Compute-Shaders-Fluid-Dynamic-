@@ -50,6 +50,8 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
             useMipMap         = true,
             filterMode        = FilterMode.Trilinear,
             anisoLevel        = 7,
+            format            = RenderTextureFormat.RFloat,
+            wrapMode          = TextureWrapMode.Clamp,
         };
 
         pressure_texture.Create();

@@ -50,11 +50,16 @@
 
                 float2 uv  = (o.worldPos.zx - _fountain_downLeft.zx) ;
                        uv  = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
-                       uv  = 1. - uv.yx;
-               float4 pressureBuffer = tex2Dlod(_fountain_pressure_buffer, float4(uv, 0, 0));
+               float   pressureBuffer = tex2Dlod(_fountain_pressure_buffer, float4(uv.xy, 0, 0));
 
-                o.vertex   = UnityObjectToClipPos(v.vertex + float4(0., _displacment * pressureBuffer.x, 0., 0.));
-                o.uv       = v.uv;
+               float clampAt = 1.5f;
+
+               float clampValue = clampAt + pressureBuffer / 10.;
+
+               pressureBuffer = lerp(clampValue, pressureBuffer, saturate((clampAt - pressureBuffer) / 2.));
+
+                o.vertex   = UnityObjectToClipPos(v.vertex + float4(0., _displacment * pressureBuffer, 0., 0.));
+                o.uv       = uv;
                 return o;
             }
 
@@ -77,16 +82,17 @@
             fixed4 frag (v2f i) : SV_Target
             {
 
-                float2 uv  = (i.worldPos.zx - _fountain_downLeft.zx) ;
-                uv = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
-                uv =  uv.xy;
+                //float2 uv  = (i.worldPos.zx - _fountain_downLeft.zx) ;
+                //uv = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
+                //uv =  uv.xy;
 
-                float3 normal  = filterNormal(uv, _canvas_texel_size);
-                float  diffuse = dot(normal, -1.0*_lightDirection);
-                fixed4 col = tex2D(_fountain_pressure_buffer, uv);
+                float3 normal  = filterNormal(i.uv, _canvas_texel_size);
+                       //normal.xzy = normal.zxy;
+                float  diffuse = saturate(dot(normal, -1.0*_lightDirection));
+                fixed4 col = tex2D(_fountain_pressure_buffer, i.uv);
                 col = lerp(_Color, _Color2, col.x) *diffuse;
                 
-                return float4(col.xyz, 1.);
+                return float4(col.xxx, 1.);
             }
             ENDCG
         }

@@ -281,6 +281,7 @@ MonoBehaviour:
     ApplyForceKey: 114
   Tran_downLeft: {fileID: 945996538}
   Tran_upRight: {fileID: 922316174}
+  mainDirectionLight: {fileID: 1724549555}
   Fountain: {fileID: 2534866582128079883}
   debug_ink: 0
 --- !u!4 &607595561
