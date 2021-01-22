@@ -11,6 +11,15 @@ public enum FieldType
 [System.Serializable]
 public class FluidSimulater
 {
+
+    // ------------------------------------------------------------------
+    // TYPES
+    //___________
+    // public
+
+    [HideInInspector]
+    public delegate Vector2 GetMousePositionCallBack();
+
     // ------------------------------------------------------------------
     // VARIABLES
     //___________
@@ -41,6 +50,13 @@ public class FluidSimulater
     public float         dye_falloff          = 2.0f;
 
 
+    [Space(4)]
+    [Header("Control Settings")]
+    [Space(2)]
+
+    public KeyCode      ApplyDyeKey  ;
+    public KeyCode      ApplyForceKey;
+
     //___________
     // private
 
@@ -49,6 +65,7 @@ public class FluidSimulater
     private CommandBuffer sim_command_buffer;
     private RenderTexture visulasation_texture;
 
+    private GetMousePositionCallBack mousPosOverrider;               // If this is NULL it is assumed the calculation is happening in screen space and the screen space pos is used for input position
 
     private int           _handle_add_dye;
     private int           _handle_st2tx;
@@ -77,6 +94,11 @@ public class FluidSimulater
         dye_radius           = 1.0f  ;
         dye_falloff          = 2.0f  ;
 
+        mousPosOverrider = null;
+
+        ApplyDyeKey   = KeyCode.Mouse0;
+        ApplyForceKey = KeyCode.Mouse1;
+
     }
 
     public FluidSimulater(FluidSimulater other)   // Copy Constructor
@@ -89,6 +111,11 @@ public class FluidSimulater
         force_falloff        = other.force_falloff        ;
         dye_radius           = other.dye_radius           ;
         dye_falloff          = other.dye_falloff          ;
+
+        mousPosOverrider = null;
+
+        ApplyDyeKey   = KeyCode.Mouse0;
+        ApplyForceKey = KeyCode.Mouse1;
     }
 
     // ------------------------------------------------------------------
@@ -107,6 +134,7 @@ public class FluidSimulater
     {
 
         ComputeShaderUtility.Initialize();
+        mousPosOverrider = null;
 
         // -----------------------
         main_cam = Camera.main;
@@ -167,6 +195,12 @@ public class FluidSimulater
         sim_command_buffer.SetGlobalFloat("i_grid_scale",      grid_scale          );
 
     }
+
+    public void SubmitMousePosOverrideDelegate(GetMousePositionCallBack getterFunction)
+    {
+        mousPosOverrider = getterFunction;
+    }
+
     // ------------------------------------------------------------------
     // LOOP
 
@@ -174,6 +208,8 @@ public class FluidSimulater
     {
         UpdateRuntimeKernelParameters();
     }
+
+    
 
     // ------------------------------------------------------------------
     // SIMULATION STEPS
@@ -372,8 +408,7 @@ public class FluidSimulater
         StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", texture);
 
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
-
-        sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget);
+        
     }
 
     public void HandleCornerBoundaries(ComputeBuffer SetBoundaryOn, FieldType fieldType)
@@ -443,7 +478,7 @@ public class FluidSimulater
 
         float forceController = 0;
 
-        if (Input.GetKey(KeyCode.Mouse1)) forceController = force_strength;
+        if (Input.GetKey(ApplyForceKey)) forceController = force_strength;
 
         UserInputShader.SetFloat ("_force_multiplier",    forceController               );
         UserInputShader.SetFloat ("_force_effect_radius", force_radius                  );
@@ -451,11 +486,15 @@ public class FluidSimulater
 
         float mouse_pressed = 0.0f;
 
-        if (Input.GetKey(KeyCode.Mouse0)) mouse_pressed = 1.0f;
+        
+        
+
+        if (Input.GetKey(ApplyDyeKey)) mouse_pressed = 1.0f;
 
         UserInputShader.SetFloat("_mouse_pressed", mouse_pressed);
 
         Vector2 mouse_pos_struct_pos = GetCurrentMouseInSimulationSpace();
+        
 
         UserInputShader.SetVector("_mouse_position",    mouse_pos_struct_pos);                   // Pass on the mouse position already in the coordinate system of the structured buffer as 2D coord
         UserInputShader.SetVector("_mouse_pos_current", mouse_pos_struct_pos);                   // Pass on the mouse position already in the coordinate system of the structured buffer as 2D coord
@@ -486,10 +525,19 @@ public class FluidSimulater
 
     private Vector2 GetCurrentMouseInSimulationSpace()
     {
-        Vector3 mouse_pos_pixel_coord = Input.mousePosition;
-        Vector2 mouse_pos_normalized  = main_cam.ScreenToViewportPoint(mouse_pos_pixel_coord);
-                mouse_pos_normalized  = new Vector2(Mathf.Clamp01(mouse_pos_normalized.x), Mathf.Clamp01(mouse_pos_normalized.y));
-        return new Vector2(mouse_pos_normalized.x * simulation_dimension, mouse_pos_normalized.y * simulation_dimension);
+        if(mousPosOverrider == null)
+        {
+           Vector3 mouse_pos_pixel_coord = Input.mousePosition;
+           Vector2 mouse_pos_normalized  = main_cam.ScreenToViewportPoint(mouse_pos_pixel_coord);
+                   mouse_pos_normalized  = new Vector2(Mathf.Clamp01(mouse_pos_normalized.x), Mathf.Clamp01(mouse_pos_normalized.y));
+           return new Vector2(mouse_pos_normalized.x * simulation_dimension, mouse_pos_normalized.y * simulation_dimension);
+        }
+
+        // case there is a overrider
+
+        Vector2 mousPosInUnitSpace = mousPosOverrider();
+
+        return mousPosInUnitSpace * simulation_dimension;
     }
 
     private void SetBufferOnCommandList(CommandBuffer cb, ComputeBuffer buffer, string buffer_name)
