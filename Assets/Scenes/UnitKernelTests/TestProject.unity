@@ -249,18 +249,20 @@ MonoBehaviour:
     UserInputShader: {fileID: 7200000, guid: 34a77dcc698611749a10834d32f57b79, type: 3}
     StructuredBufferUtilityShader: {fileID: 7200000, guid: 055ac4473d61fb445993e89239fc047c,
       type: 3}
-    canvas_dimension: 512
-    simulation_dimension: 256
-    solver_iteration_num: 80
+    canvas_dimension: 1024
+    simulation_dimension: 512
+    solver_iteration_num: 160
     grid_scale: 1
     time_step: 1
-    Viscosity: 0.02
+    Viscosity: 0.0025
     force_strength: 1
-    force_radius: 1
-    force_falloff: 1
-    dye_radius: 10
-    dye_falloff: 4
-  source_texture: {fileID: 2800000, guid: e195a728ef7113746af5177d2b7ffee0, type: 3}
+    force_radius: 10
+    force_falloff: 5
+    dye_radius: 20
+    dye_falloff: 5
+    ApplyDyeKey: 323
+    ApplyForceKey: 324
+  source_texture: {fileID: 0}
 --- !u!4 &1025801093
 Transform:
   m_ObjectHideFlags: 0

@@ -266,13 +266,13 @@ MonoBehaviour:
     UserInputShader: {fileID: 7200000, guid: 34a77dcc698611749a10834d32f57b79, type: 3}
     StructuredBufferUtilityShader: {fileID: 7200000, guid: 055ac4473d61fb445993e89239fc047c,
       type: 3}
-    canvas_dimension: 512
-    simulation_dimension: 256
+    canvas_dimension: 1024
+    simulation_dimension: 512
     solver_iteration_num: 80
     grid_scale: 1
-    time_step: 1
-    Viscosity: 0.01
-    force_strength: 0.5
+    time_step: 2
+    Viscosity: 0.0005
+    force_strength: 0.05
     force_radius: 5
     force_falloff: 5
     dye_radius: 25
@@ -575,6 +575,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -5975033157549033438, guid: 4e8d7c9ed4f023a408d900d9ca1c7345,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.009
+      objectReference: {fileID: 0}
+    - target: {fileID: -5975033157549033438, guid: 4e8d7c9ed4f023a408d900d9ca1c7345,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.016
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4e8d7c9ed4f023a408d900d9ca1c7345, type: 3}

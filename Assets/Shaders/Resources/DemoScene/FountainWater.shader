@@ -54,7 +54,7 @@
 
                float clampAt = 1.5f;
 
-               float clampValue = clampAt + pressureBuffer / 10.;
+               float clampValue = clampAt + pressureBuffer / 40.;
 
                pressureBuffer = lerp(clampValue, pressureBuffer, saturate((clampAt - pressureBuffer) / 2.));
 
@@ -90,9 +90,9 @@
                        //normal.xzy = normal.zxy;
                 float  diffuse = saturate(dot(normal, -1.0*_lightDirection));
                 fixed4 col = tex2D(_fountain_pressure_buffer, i.uv);
-                col = lerp(_Color, _Color2, col.x) *diffuse;
-                
-                return float4(col.xxx, 1.);
+               // col = lerp(_Color, _Color2, col.x) *diffuse;
+                //return float4(i.uv.xy, 0., 1.);
+                return float4(col.xyz, 1.);
             }
             ENDCG
         }
