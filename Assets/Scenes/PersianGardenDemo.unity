@@ -271,7 +271,7 @@ MonoBehaviour:
     solver_iteration_num: 80
     grid_scale: 1
     time_step: 2
-    Viscosity: 0.0005
+    Viscosity: 0.0001
     force_strength: 0.05
     force_radius: 5
     force_falloff: 5
@@ -282,7 +282,7 @@ MonoBehaviour:
   Tran_downLeft: {fileID: 945996538}
   Tran_upRight: {fileID: 922316174}
   mainDirectionLight: {fileID: 1724549555}
-  Fountain: {fileID: 2534866582128079883}
+  Fountain: {fileID: 1525592932}
   debug_ink: 0
 --- !u!4 &607595561
 Transform:
@@ -479,6 +479,12 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1525592932 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2534866581884222612, guid: 4e8d7c9ed4f023a408d900d9ca1c7345,
+    type: 3}
+  m_PrefabInstance: {fileID: 2037914147}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1724549554
 GameObject:
   m_ObjectHideFlags: 0

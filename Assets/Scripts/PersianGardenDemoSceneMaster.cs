@@ -122,8 +122,8 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         Ray ray = main_cam.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out results, 100.0f))
         {
-            if (results.collider.gameObject != Fountain) return new Vector2(-20.0f, -20.0f);
 
+            if (results.collider.gameObject != Fountain) return new Vector2(-20.0f, -20.0f);
 
             Vector2 hitPositionInSimulationSpace = new Vector2(results.point.z, results.point.x);
                     hitPositionInSimulationSpace = hitPositionInSimulationSpace - new Vector2(Tran_downLeft.position.z, Tran_downLeft.position.x);
@@ -131,7 +131,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
             Vector2 span = new Vector2(Tran_upRight.position.z, Tran_upRight.position.x) - new Vector2(Tran_downLeft.position.z, Tran_downLeft.position.x);
 
              hitPositionInSimulationSpace = new Vector2(hitPositionInSimulationSpace.x / Mathf.Abs(span.x), hitPositionInSimulationSpace.y / Mathf.Abs(span.y));
-          
+            
             return hitPositionInSimulationSpace;
 
         }

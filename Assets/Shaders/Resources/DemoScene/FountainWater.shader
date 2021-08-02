@@ -66,14 +66,18 @@
             float3 filterNormal(float2 uv, float texelSize)
             {
                 float4 h;
-                h[0] = tex2D(_fountain_pressure_buffer, uv + texelSize * float2( 0, -1)).r * _displacment;
-                h[1] = tex2D(_fountain_pressure_buffer, uv + texelSize * float2(-1,  0)).r * _displacment;
-                h[2] = tex2D(_fountain_pressure_buffer, uv + texelSize * float2( 1,  0)).r * _displacment;
-                h[3] = tex2D(_fountain_pressure_buffer, uv + texelSize * float2( 0,  1)).r * _displacment;
+                float2 t = uv + texelSize * float2(0, -1);
+                h[0] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
+                       t = uv + texelSize * float2(-1,  0);
+                h[1] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
+                       t = uv + texelSize * float2( 1,  0);
+                h[2] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
+                       t = uv + texelSize * float2( 0,  1) ;
+                h[3] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
 
                 float3 n;
                 n.z = -(h[0] - h[3]);
-                n.x =  (h[1] - h[2]);
+                n.x =  (h[1] - h[2]); 
                 n.y = 2 * texelSize; // pixel space -> uv space
 
                 return normalize(n);
@@ -82,15 +86,13 @@
             fixed4 frag (v2f i) : SV_Target
             {
 
-                //float2 uv  = (i.worldPos.zx - _fountain_downLeft.zx) ;
-                //uv = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
-                //uv =  uv.xy;
 
                 float3 normal  = filterNormal(i.uv, _canvas_texel_size);
                        //normal.xzy = normal.zxy;
                 float  diffuse = saturate(dot(normal, -1.0*_lightDirection));
-                fixed4 col = tex2D(_fountain_pressure_buffer, i.uv);
-               // col = lerp(_Color, _Color2, col.x) *diffuse;
+                fixed4 col = tex2Dlod(_fountain_pressure_buffer, float4(i.uv.xy,0.,0.));
+                col.xyz = smoothstep(-0.1, 0.1, col.xyz);
+                col = lerp(_Color, _Color2, col.x) *diffuse;
                 //return float4(i.uv.xy, 0., 1.);
                 return float4(col.xyz, 1.);
             }
