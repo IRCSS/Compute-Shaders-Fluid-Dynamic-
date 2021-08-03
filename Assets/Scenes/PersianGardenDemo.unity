@@ -268,11 +268,11 @@ MonoBehaviour:
       type: 3}
     canvas_dimension: 1024
     simulation_dimension: 512
-    solver_iteration_num: 80
+    solver_iteration_num: 120
     grid_scale: 1
-    time_step: 2
+    time_step: 5
     Viscosity: 0.0001
-    force_strength: 0.05
+    force_strength: 0.1
     force_radius: 5
     force_falloff: 5
     dye_radius: 25
@@ -508,13 +508,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1724549554}
-  m_LocalRotation: {x: -0.008861012, y: 0.887109, z: -0.46116045, w: -0.017035501}
-  m_LocalPosition: {x: 0.13677421, y: 14.935513, z: 8.023976}
+  m_LocalRotation: {x: -0.0034505574, y: 0.9835838, z: -0.1794276, w: -0.01888967}
+  m_LocalPosition: {x: 0.13677421, y: 1.44, z: 3.187}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 6
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 20.677, y: -177.8, z: -0.001}
 --- !u!1001 &2037914147
 PrefabInstance:
   m_ObjectHideFlags: 0

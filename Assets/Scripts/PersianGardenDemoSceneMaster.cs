@@ -61,7 +61,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         Shader.SetGlobalVector("_canvas_texel_size", new Vector4(1.0f/fluid_simulater.canvas_dimension, 1.0f / fluid_simulater.canvas_dimension, 0.0f, 0.0f));
         Shader.SetGlobalVector("_lightDirection"   , mainDirectionLight.forward);
-
+        Shader.SetGlobalMatrix("_fountain2World"   , Tran_downLeft.localToWorldMatrix);
 
         //--
 
@@ -116,10 +116,12 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     // ------------------------------------------------------------------
     // FUNCTIONS
 
-    Vector2 GetMousePosInSimulationSpaceUnitValue()
+    Vector2 GetMousePosInSimulationSpaceUnitValue(ref bool isInBound)
     {
         RaycastHit results;
         Ray ray = main_cam.ScreenPointToRay(Input.mousePosition);
+
+        isInBound = false;
         if (Physics.Raycast(ray, out results, 100.0f))
         {
 
@@ -131,7 +133,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
             Vector2 span = new Vector2(Tran_upRight.position.z, Tran_upRight.position.x) - new Vector2(Tran_downLeft.position.z, Tran_downLeft.position.x);
 
              hitPositionInSimulationSpace = new Vector2(hitPositionInSimulationSpace.x / Mathf.Abs(span.x), hitPositionInSimulationSpace.y / Mathf.Abs(span.y));
-            
+            isInBound = true;
             return hitPositionInSimulationSpace;
 
         }

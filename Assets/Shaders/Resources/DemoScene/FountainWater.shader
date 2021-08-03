@@ -42,6 +42,7 @@
             float     _displacment;
             float2    _canvas_texel_size;
             float3    _lightDirection;
+            float4x4  _fountain2World;
 
             v2f vert (appdata v)
             {
@@ -56,7 +57,7 @@
 
                float clampValue = clampAt + pressureBuffer / 40.;
 
-               pressureBuffer = lerp(clampValue, pressureBuffer, saturate((clampAt - pressureBuffer) / 2.));
+               //pressureBuffer = lerp(clampValue, pressureBuffer, saturate((clampAt - pressureBuffer) / 2.));
 
                 o.vertex   = UnityObjectToClipPos(v.vertex + float4(0., _displacment * pressureBuffer, 0., 0.));
                 o.uv       = uv;
@@ -76,8 +77,8 @@
                 h[3] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
 
                 float3 n;
-                n.z = -(h[0] - h[3]);
-                n.x =  (h[1] - h[2]); 
+                n.x = -(h[0] - h[3]);
+                n.z =  (h[1] - h[2]); 
                 n.y = 2 * texelSize; // pixel space -> uv space
 
                 return normalize(n);
@@ -88,13 +89,25 @@
 
 
                 float3 normal  = filterNormal(i.uv, _canvas_texel_size);
+                       normal  = mul(_fountain2World, float4(normal.xyz, 0.));
                        //normal.xzy = normal.zxy;
                 float  diffuse = saturate(dot(normal, -1.0*_lightDirection));
+                float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
+
+                float3 specularReflection;
+                if (dot(normal, -_lightDirection) < 0.0) specularReflection = float3(0.0, 0.0, 0.0);
+                else 
+                {
+                    specularReflection = float3(1., 1., 0.8) * pow(max(0., dot(reflect(_lightDirection, normal), viewDir)), 20.);
+                }
+                
+
+
                 fixed4 col = tex2Dlod(_fountain_pressure_buffer, float4(i.uv.xy,0.,0.));
                 col.xyz = smoothstep(-0.1, 0.1, col.xyz);
-                col = lerp(_Color, _Color2, col.x) *diffuse;
+                col.xyz = lerp(_Color, _Color2, col.x) * diffuse + float3(0.2, 0.2, 0.2) + specularReflection;
                 //return float4(i.uv.xy, 0., 1.);
-                return float4(col.xyz, 1.);
+                return float4(col.xyz, _Color.a);
             }
             ENDCG
         }

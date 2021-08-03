@@ -8,6 +8,7 @@ public enum FieldType
     Velocity, Pressure, Dye 
 }
 
+
 [System.Serializable]
 public class FluidSimulater
 {
@@ -18,7 +19,7 @@ public class FluidSimulater
     // public
 
     [HideInInspector]
-    public delegate Vector2 GetMousePositionCallBack();
+    public delegate Vector2 GetMousePositionCallBack(ref bool isInBound);
 
     // ------------------------------------------------------------------
     // VARIABLES
@@ -80,6 +81,7 @@ public class FluidSimulater
     private int           _handle_calculate_divergence_free;
 
     private Vector2       mouse_previus_pos;
+    private bool          mouse_previus_outofBound;
     // ------------------------------------------------------------------
     // CONSTRUCTOR
 
@@ -535,8 +537,20 @@ public class FluidSimulater
         }
 
         // case there is a overrider
+        bool isInBound = true;
+        Vector2 mousPosInUnitSpace = mousPosOverrider(ref isInBound);
 
-        Vector2 mousPosInUnitSpace = mousPosOverrider();
+
+
+        if (!isInBound)
+        {
+            mouse_previus_outofBound = !isInBound;
+            return mouse_previus_pos;
+        }
+
+        if (mouse_previus_outofBound) mouse_previus_pos = mousPosInUnitSpace * simulation_dimension;
+         mouse_previus_outofBound = !isInBound;
+
 
         return mousPosInUnitSpace * simulation_dimension;
     }
