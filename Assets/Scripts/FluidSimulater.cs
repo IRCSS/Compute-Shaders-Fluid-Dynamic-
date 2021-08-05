@@ -49,6 +49,7 @@ public class FluidSimulater
     public float         force_falloff        = 2;
     public float         dye_radius           = 1.0f;
     public float         dye_falloff          = 2.0f;
+    public float         velocity_dissapation = 0.999f;
 
 
     [Space(4)]
@@ -95,7 +96,7 @@ public class FluidSimulater
         force_falloff        = 2     ;
         dye_radius           = 1.0f  ;
         dye_falloff          = 2.0f  ;
-
+        velocity_dissapation = 0.999f;
         mousPosOverrider = null;
 
         ApplyDyeKey   = KeyCode.Mouse0;
@@ -113,7 +114,7 @@ public class FluidSimulater
         force_falloff        = other.force_falloff        ;
         dye_radius           = other.dye_radius           ;
         dye_falloff          = other.dye_falloff          ;
-
+        velocity_dissapation = other.velocity_dissapation ;
         mousPosOverrider = null;
 
         ApplyDyeKey   = KeyCode.Mouse0;

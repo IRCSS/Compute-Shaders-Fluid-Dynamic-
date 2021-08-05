@@ -6,5 +6,5 @@ float i_grid_scale;
 float i_timeStep;
 
 
-#define epsilon 0.0001
+#define epsilon 0.000001
 #endif

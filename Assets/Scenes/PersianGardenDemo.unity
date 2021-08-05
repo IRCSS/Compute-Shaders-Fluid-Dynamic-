@@ -271,12 +271,13 @@ MonoBehaviour:
     solver_iteration_num: 120
     grid_scale: 1
     time_step: 5
-    Viscosity: 0.0001
+    Viscosity: 0.00000001
     force_strength: 0.1
     force_radius: 5
     force_falloff: 5
     dye_radius: 25
     dye_falloff: 10
+    velocity_dissapation: 0.999999
     ApplyDyeKey: 323
     ApplyForceKey: 114
   Tran_downLeft: {fileID: 945996538}

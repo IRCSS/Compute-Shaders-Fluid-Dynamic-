@@ -98,7 +98,7 @@
                 if (dot(normal, -_lightDirection) < 0.0) specularReflection = float3(0.0, 0.0, 0.0);
                 else 
                 {
-                    specularReflection = float3(1., 1., 0.8) * pow(max(0., dot(reflect(_lightDirection, normal), viewDir)), 20.);
+                    specularReflection = float3(1., 1., 0.8) * pow(max(0., dot(reflect(_lightDirection, normal), viewDir)), 40.);
                 }
                 
 

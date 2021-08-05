@@ -96,7 +96,21 @@ void AddForce_mouse(uint3 id : SV_DispatchThreadID) {
 
     float  mouse_mov_length = length(mouse_prev2Curr);
 
-    if (mouse_mov_length < epsilon) return;
+    //float2 mouse2Grid = (float2)id.xy - _mouse_pos_current;
+
+    //float M2GLength = length(mouse2Grid);
+    //if (M2GLength > epsilon)
+
+    //{
+    //    float forceFactr = 1. - clamp(smoothstep(_force_effect_radius, _force_effect_radius + _force_falloff, M2GLength), 0., 1.);
+
+    //    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4((mouse2Grid.xy / M2GLength) * forceFactr * _force_multiplier *2., 0., 0.);
+
+    //} 
+
+
+
+    if (mouse_mov_length < epsilon) return; 
            
 
     float cellCloseEnough = DrawHalfVectorWithLength(_mouse_pos_prev, mouse_prev2Curr / mouse_mov_length, mouse_mov_length,
