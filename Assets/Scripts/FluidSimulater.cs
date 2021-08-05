@@ -197,6 +197,46 @@ public class FluidSimulater
         sim_command_buffer.SetGlobalFloat("i_timeStep",        time_step           );
         sim_command_buffer.SetGlobalFloat("i_grid_scale",      grid_scale          );
 
+        // setup the offset table 
+
+        List<float> CardinalDirectionLUT = new List<float>
+        {
+            // All Fields starting with zero, field is in fluid
+            0, 0, 1, 1,// in Binary 00000 . In HEX 0x0000   .   
+            0, 0, 1, 1,// in Binary 00001 . In HEX 0x0001
+            0, 0, 1, 1,// in Binary 00010 . In HEX 0x0002
+            0, 0, 1, 1,// in Binary 00011 . In HEX 0x0003
+            0, 0, 1, 1,// in Binary 00100 . In HEX 0x0004
+            0, 0, 1, 1,// in Binary 00101 . In HEX 0x0005
+            0, 0, 1, 1,// in Binary 00110 . In HEX 0x0006
+            0, 0, 1, 1,// in Binary 00111 . In HEX 0x0007
+            0, 0, 1, 1,// in Binary 01000 . In HEX 0x0008
+            0, 0, 1, 1,// in Binary 01001 . In HEX 0x0009
+            0, 0, 1, 1,// in Binary 01010 . In HEX 0x000A
+            0, 0, 1, 1,// in Binary 01011 . In HEX 0x000B
+            0, 0, 1, 1,// in Binary 01100 . In HEX 0x000C
+            0, 0, 1, 1,// in Binary 01101 . In HEX 0x000D
+            0, 0, 1, 1,// in Binary 01110 . In HEX 0x000E
+            0, 0, 1, 1,// in Binary 01111 . In HEX 0x000F
+            // All starting with one, the centeral Field is in obstcle 
+            0, 0, 0, 0,// in Binary 10000 . In HEX 0x0010
+            0, 0, 0, 0,// in Binary 10001 . In HEX 0x0011
+            0, 0, 0, 0,// in Binary 10010 . In HEX 0x0012
+            0, 0, 0, 0,// in Binary 10011 . In HEX 0x0013
+            0, 0, 0, 0,// in Binary 10100 . In HEX 0x0014
+            0, 0, 0, 0,// in Binary 10101 . In HEX 0x0015
+            0, 0, 0, 0,// in Binary 10110 . In HEX 0x0016
+            0, 0, 0, 0,// in Binary 10111 . In HEX 0x0017
+            0, 0, 0, 0,// in Binary 11000 . In HEX 0x0018
+            0, 0, 0, 0,// in Binary 11001 . In HEX 0x0019
+            0, 0, 0, 0,// in Binary 11010 . In HEX 0x001A
+            0, 0, 0, 0,// in Binary 11011 . In HEX 0x001B
+            0, 0, 0, 0,// in Binary 11100 . In HEX 0x001C
+            0, 0, 0, 0,// in Binary 11101 . In HEX 0x001D
+            0, 0, 0, 0,// in Binary 11110 . In HEX 0x001E
+            0, 0, 0, 0 // in Binary 11111 . In HEX 0x001F
+        };
+
     }
 
     public void SubmitMousePosOverrideDelegate(GetMousePositionCallBack getterFunction)
