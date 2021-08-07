@@ -31,13 +31,16 @@ public class Simple2DFluidSim : MonoBehaviour
 
         fluid_simulater.AddUserForce           (resources.velocity_buffer                                   );
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
+        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.Diffuse                (resources.velocity_buffer                                   );
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
+        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
         fluid_simulater.Advect                 (resources.velocity_buffer, resources.velocity_buffer, 0.999f);
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
+        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
-        fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
+
 
         fluid_simulater.AddDye                 (resources.dye_buffer                                        );
         fluid_simulater.Advect                 (resources.dye_buffer, resources.velocity_buffer, 0.999f);

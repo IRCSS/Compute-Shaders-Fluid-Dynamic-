@@ -80,6 +80,9 @@ public class FluidSimulater
     private int           _handle_advection;
     private int           _handle_divergence;
     private int           _handle_calculate_divergence_free;
+    private int           _handle_update_arbitary_boundary_offset;
+    private int           _handle_arbitary_boundary_velocity;
+    private int           _handle_arbitary_boundary_pressure;
 
     private Vector2       mouse_previus_pos;
     private bool          mouse_previus_outofBound;
@@ -162,18 +165,25 @@ public class FluidSimulater
         // -----------------------
         // Setting kernel handles
 
-        _handle_add_dye                     =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
-        _handle_add_dye_from_texture        =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"         );
-        _handle_st2tx                       =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
-        _handle_Jacobi_Solve                =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
-        _handle_Copy_StructuredBuffer       =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
-        _handle_Clear_StructuredBuffer      =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
-        _handle_NeuMannBoundary             =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
-        _handle_addForceWithMouse           =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
-        _handle_advection                   =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
-        _handle_divergence                  =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
-        _handle_calculate_divergence_free   =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "calculate_divergence_free"   );
+        _handle_add_dye                         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
+        _handle_add_dye_from_texture            =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"         );
+        _handle_st2tx                           =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
+        _handle_Jacobi_Solve                    =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
+        _handle_Copy_StructuredBuffer           =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
+        _handle_Clear_StructuredBuffer          =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
+        _handle_NeuMannBoundary                 =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
+        _handle_addForceWithMouse               =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
+        _handle_advection                       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
+        _handle_divergence                      =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
+        _handle_calculate_divergence_free       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "calculate_divergence_free"   );
+        _handle_update_arbitary_boundary_offset =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "UpdateArbitaryBoundaryOffset");
+        _handle_arbitary_boundary_velocity      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryVelocity"    );
+        _handle_arbitary_boundary_pressure      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryPressure"    );
 
+
+        
+        
+       
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
 
@@ -196,46 +206,8 @@ public class FluidSimulater
         sim_command_buffer.SetGlobalInt  ("i_Resolution", (int)simulation_dimension);
         sim_command_buffer.SetGlobalFloat("i_timeStep",        time_step           );
         sim_command_buffer.SetGlobalFloat("i_grid_scale",      grid_scale          );
-
-        // setup the offset table 
-
-        List<float> CardinalDirectionLUT = new List<float>
-        {
-            // All Fields starting with zero, field is in fluid
-            0, 0, 1, 1,// in Binary 00000 . In HEX 0x0000   .   
-            0, 0, 1, 1,// in Binary 00001 . In HEX 0x0001
-            0, 0, 1, 1,// in Binary 00010 . In HEX 0x0002
-            0, 0, 1, 1,// in Binary 00011 . In HEX 0x0003
-            0, 0, 1, 1,// in Binary 00100 . In HEX 0x0004
-            0, 0, 1, 1,// in Binary 00101 . In HEX 0x0005
-            0, 0, 1, 1,// in Binary 00110 . In HEX 0x0006
-            0, 0, 1, 1,// in Binary 00111 . In HEX 0x0007
-            0, 0, 1, 1,// in Binary 01000 . In HEX 0x0008
-            0, 0, 1, 1,// in Binary 01001 . In HEX 0x0009
-            0, 0, 1, 1,// in Binary 01010 . In HEX 0x000A
-            0, 0, 1, 1,// in Binary 01011 . In HEX 0x000B
-            0, 0, 1, 1,// in Binary 01100 . In HEX 0x000C
-            0, 0, 1, 1,// in Binary 01101 . In HEX 0x000D
-            0, 0, 1, 1,// in Binary 01110 . In HEX 0x000E
-            0, 0, 1, 1,// in Binary 01111 . In HEX 0x000F
-            // All starting with one, the centeral Field is in obstcle 
-            0, 0, 0, 0,// in Binary 10000 . In HEX 0x0010
-            0, 0, 0, 0,// in Binary 10001 . In HEX 0x0011
-            0, 0, 0, 0,// in Binary 10010 . In HEX 0x0012
-            0, 0, 0, 0,// in Binary 10011 . In HEX 0x0013
-            0, 0, 0, 0,// in Binary 10100 . In HEX 0x0014
-            0, 0, 0, 0,// in Binary 10101 . In HEX 0x0015
-            0, 0, 0, 0,// in Binary 10110 . In HEX 0x0016
-            0, 0, 0, 0,// in Binary 10111 . In HEX 0x0017
-            0, 0, 0, 0,// in Binary 11000 . In HEX 0x0018
-            0, 0, 0, 0,// in Binary 11001 . In HEX 0x0019
-            0, 0, 0, 0,// in Binary 11010 . In HEX 0x001A
-            0, 0, 0, 0,// in Binary 11011 . In HEX 0x001B
-            0, 0, 0, 0,// in Binary 11100 . In HEX 0x001C
-            0, 0, 0, 0,// in Binary 11101 . In HEX 0x001D
-            0, 0, 0, 0,// in Binary 11110 . In HEX 0x001E
-            0, 0, 0, 0 // in Binary 11111 . In HEX 0x001F
-        };
+        
+        
 
     }
 
@@ -429,6 +401,56 @@ public class FluidSimulater
         ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
         ClearBuffer(FluidGPUResources.buffer_pong, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
     }
+
+    public void UpdateArbitaryBoundaryOffsets(Texture2D boundaryTexture, FluidGPUResources resource_instance)
+    {
+        // CHECKS
+        if(!boundaryTexture)
+        {
+            Debug.LogError("No valid texture was provided as boundary for the update arbitary boundery method.");
+            return;
+        }
+
+        if(boundaryTexture.width != boundaryTexture.height)
+        {
+            Debug.LogError("The provided boundary texture to Update Abitrary Boundary Offset is not valid, it is non quardatic texture");
+            return;
+        }
+        // -------------
+
+
+
+        BorderShader.SetTexture(_handle_update_arbitary_boundary_offset, "_arbitary_boundaries_texture", boundaryTexture);
+        BorderShader.SetInt    ("i_Resolution", (int)simulation_dimension);
+        BorderShader.SetFloat  ("_arbitary_boundaries_texel_size",  1.0f / ((float)boundaryTexture.width));
+
+        // Velocity
+        // ----------
+
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_arbitaryBoundaryCardinalDirectionsLUT", resource_instance.cardinal_diections_LUT_Velocity);
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_perCellArbitaryBoundryOffsets",         resource_instance.boundary_velocity_offset_buffer);
+
+        DispatchDimensions group_nums = ComputeShaderUtility.CheckGetDispatchDimensions(BorderShader,
+                            _handle_update_arbitary_boundary_offset, simulation_dimension, simulation_dimension, 1);
+        BorderShader.Dispatch(_handle_update_arbitary_boundary_offset,
+            (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
+
+        // Pressure
+        // ----------
+
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_arbitaryBoundaryCardinalDirectionsLUT", resource_instance.cardinal_diections_LUT_Presure );
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_perCellArbitaryBoundryOffsets",         resource_instance.boundary_pressure_offset_buffer);
+
+        BorderShader.Dispatch(_handle_update_arbitary_boundary_offset,
+            (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
+
+    }
+
+    public void HandleArbitaryBoundary(ComputeBuffer SetBoundaryOn, FieldType fieldType)
+    {
+
+    }
+
 
     public void Visualiuse(ComputeBuffer buffer_to_visualize)
     {
