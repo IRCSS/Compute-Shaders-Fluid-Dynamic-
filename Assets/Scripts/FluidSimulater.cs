@@ -86,6 +86,7 @@ public class FluidSimulater
     private int           _handle_arbitary_boundary_velocity      ;
     private int           _handle_arbitary_boundary_pressure      ;
     private int           _handle_arbitary_boundary_dye           ;
+    private int           _handle_add_constant_uniform_force      ;
 
     private Vector2       mouse_previus_pos;
     private bool          mouse_previus_outofBound;
@@ -178,6 +179,7 @@ public class FluidSimulater
         _handle_NeuMannBoundary                 =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
         _handle_addForceWithMouse               =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
         _handle_add_constant_force_source       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_force_at"       );
+        _handle_add_constant_uniform_force      =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_uniform_force"  );
         _handle_advection                       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
         _handle_divergence                      =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
         _handle_calculate_divergence_free       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "calculate_divergence_free"   );
@@ -186,9 +188,8 @@ public class FluidSimulater
         _handle_arbitary_boundary_pressure      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryPressure"    );
         _handle_arbitary_boundary_dye           =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryDye"         );
 
-        
-        
-       
+
+
         // -----------------------
         // Initialize Kernel Parameters, buffers our bound by the actual shader dispatch functions
 
@@ -255,6 +256,13 @@ public class FluidSimulater
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_constant_force_source, simulation_dimension, simulation_dimension, 1);
     }
 
+    public void AddConstantUniformForce(ComputeBuffer force_buffer, Vector2 force)
+    {
+        UserInputShader.SetVector("_uniform_force", force);
+        SetBufferOnCommandList(sim_command_buffer, force_buffer, "_user_applied_force_buffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_constant_uniform_force, simulation_dimension, simulation_dimension, 1);
+
+    }
 
     public void AddDye(ComputeBuffer dye_buffer)
     {
@@ -266,7 +274,7 @@ public class FluidSimulater
 
     public void AddConstantDyeSource(ComputeBuffer dye_buffer, Vector2 dyeSourcePosiiton)
     {
-        if (!IsValid()) return;
+        if (!IsValid()) return; 
 
         UserInputShader.SetFloat ("_constant_dye_radius",          dye_radius );
         UserInputShader.SetFloat ("_constant_dye_falloff",         dye_falloff);
@@ -564,6 +572,20 @@ public class FluidSimulater
 
     }
 
+    public void Visualiuse(ComputeBuffer buffer_to_visualize, Material blitMat)
+    {
+        if (!IsValid()) return;
+        
+
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
+        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", visulasation_texture);
+
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
+
+        sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget, blitMat);
+
+    }
+
     public void CopyBufferToTexture(RenderTexture texture, ComputeBuffer buffer_to_visualize)
     {
         if (!IsValid()) return;
@@ -627,8 +649,21 @@ public class FluidSimulater
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Clear_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
     }
 
+    private void SetFloatOnAllShaders(float toSet, string name)
+    {
+        StokeNavierShader              .SetFloat(name, toSet);
+        SolverShader                   .SetFloat(name, toSet);
+        BorderShader                   .SetFloat(name, toSet);
+        StructuredBufferToTextureShader.SetFloat(name, toSet);
+        UserInputShader                .SetFloat(name, toSet);
+        StructuredBufferUtilityShader  .SetFloat(name, toSet);
+    }
+
     private void UpdateRuntimeKernelParameters()
     {
+
+        SetFloatOnAllShaders(Time.time, "i_Time");
+
         // ------------------------------------------------------------------------------
         // USER INPUT ADD DYE 
         //UserInputShader.SetVector("_dye_color",         Color.HSVToRGB(0.2f, 0.8f, 0.6f));

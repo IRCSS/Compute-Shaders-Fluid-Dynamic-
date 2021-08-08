@@ -7,6 +7,7 @@
 #pragma kernel AddDye_from_picture
 #pragma kernel AddForce_mouse
 #pragma kernel Add_constant_force_at
+#pragma kernel Add_constant_uniform_force
 
 
 //____________________________________________________________________________________
@@ -177,6 +178,24 @@ void Add_constant_force_at(uint3 id : SV_DispatchThreadID)
     float  forceMask = smoothstep(_constant_force_radius,
         _constant_force_radius - _constant_force_falloff, disToSource);                 // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
 
-    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(forceMask *_constant_force_source_direction.xy, 0., 0.);
+    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(forceMask *(_constant_force_source_direction.xy + float2(sin(i_Time + id.x*0.05)*.5 + sin(i_Time *0.5 +0.1 + id.x*0.05)*0.5, 0.)), 0., 0.);
 }
  
+
+
+// ---------------------
+float2 _uniform_force;
+
+
+//----------------------------------------------------------------------------
+// Function         : Add_constant_uniform_force
+// Description      : This adds a uniform force over the entire grid. Force is euqla everywhere
+//                    
+//                    
+//----------------------------------------------------------------------------
+[numthreads(16, 16, 1)]
+void Add_constant_uniform_force(uint3 id : SV_DispatchThreadID)
+{
+
+    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(_uniform_force.xy,0.,0.);
+}
