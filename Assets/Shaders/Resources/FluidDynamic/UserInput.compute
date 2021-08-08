@@ -3,8 +3,11 @@
 //____________________________________________________________________________________
 // KERNELS
 #pragma kernel AddDye
+#pragma kernel Add_constant_dye
 #pragma kernel AddDye_from_picture
 #pragma kernel AddForce_mouse
+#pragma kernel Add_constant_force_at
+
 
 //____________________________________________________________________________________
 // DECLERNATIONS
@@ -45,6 +48,35 @@ void AddDye(uint3 id : SV_DispatchThreadID)
         _mouse_dye_radius - _mouse_dye_falloff, disToMouse);                 // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
 
            dyeAmount *= _mouse_pressed;                                      // Factor in the mouse being pressed. This is zero when mouse is not being pressed and one when it is. On touch sensitive stuff this can also take a value between
+
+
+    float4 currentDyeBufferValue  = _dye_buffer[id2Dto1D(id.xy)];
+           currentDyeBufferValue += dyeAmount * _dye_color;
+    _dye_buffer[id2Dto1D(id.xy)]  = currentDyeBufferValue;
+}
+
+
+//----------------------------------------------------------------------------
+// Function         : Add_constant_dye_at
+// Description      :  This adds constant dye at a given point. You can use it to generate a 
+//                     source. For example for shaum etc 
+//                     
+//----------------------------------------------------------------------------
+ 
+float2                     _constant_dye_source_position;
+float                      _constant_dye_falloff;
+float                      _constant_dye_radius;
+
+[numthreads(16,16,1)]
+void Add_constant_dye(uint3 id : SV_DispatchThreadID)
+{ 
+    
+
+    float2 vecToSource = _constant_dye_source_position - (float2)id.xy;
+    float  disToSource = length(vecToSource);
+    
+    float  dyeAmount  = smoothstep(_constant_dye_radius,
+        _constant_dye_radius - _constant_dye_falloff, disToSource);                 // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
 
 
     float4 currentDyeBufferValue  = _dye_buffer[id2Dto1D(id.xy)];
@@ -119,3 +151,32 @@ void AddForce_mouse(uint3 id : SV_DispatchThreadID) {
     _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(cellCloseEnough * mouse_prev2Curr.xy * _force_multiplier, 0., 0.);
 
 }
+
+//----------------------------------------------------------------------------
+// Add_constant_force_at DECLERNATIONS
+
+
+float4                     _constant_force_source_direction;
+float2                     _constant_force_source_position;
+float                      _constant_force_falloff;
+float                      _constant_force_radius;
+
+
+//----------------------------------------------------------------------------
+// Function         : AddForce_mouse
+// Description      : This kernel adds user input force based on mouse movement to the fluid simulation
+//                    Based on the previous pos and current mouse positon, for all pixels that were on the way
+//                    a force is added to them. The calculation is done using projections and sign distance. 
+//----------------------------------------------------------------------------
+[numthreads(16, 16, 1)]
+void Add_constant_force_at(uint3 id : SV_DispatchThreadID) 
+{
+    float2 vecToSource = _constant_force_source_position - (float2)id.xy;
+    float  disToSource = length(vecToSource);
+
+    float  forceMask = smoothstep(_constant_force_radius,
+        _constant_force_radius - _constant_force_falloff, disToSource);                 // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
+
+    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(forceMask *_constant_force_source_direction.xy, 0., 0.);
+}
+ 

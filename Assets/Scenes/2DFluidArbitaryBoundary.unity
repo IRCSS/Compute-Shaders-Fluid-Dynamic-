@@ -146,7 +146,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 65463033}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8b4a376740e568343a5496826a7aedb4, type: 3}
+  m_Script: {fileID: 11500000, guid: 9b4db3d3a85d5af46bfbf0c19af4c7e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   fluid_simulater:
@@ -169,8 +169,10 @@ MonoBehaviour:
     force_falloff: 1
     dye_radius: 20
     dye_falloff: 5
+    velocity_dissapation: 0.999
     ApplyDyeKey: 323
     ApplyForceKey: 324
+  boundaryTexture: {fileID: 2800000, guid: aa9fc479d18d55940a975a716dcd39bb, type: 3}
 --- !u!4 &65463035
 Transform:
   m_ObjectHideFlags: 0

@@ -69,20 +69,22 @@ public class FluidSimulater
 
     private GetMousePositionCallBack mousPosOverrider;               // If this is NULL it is assumed the calculation is happening in screen space and the screen space pos is used for input position
 
-    private int           _handle_add_dye;
-    private int           _handle_st2tx;
-    private int           _handle_Jacobi_Solve;
-    private int           _handle_Copy_StructuredBuffer;
-    private int           _handle_Clear_StructuredBuffer;
-    private int           _handle_add_dye_from_texture;
-    private int           _handle_NeuMannBoundary;
-    private int           _handle_addForceWithMouse;
-    private int           _handle_advection;
-    private int           _handle_divergence;
-    private int           _handle_calculate_divergence_free;
-    private int           _handle_update_arbitary_boundary_offset;
-    private int           _handle_arbitary_boundary_velocity;
-    private int           _handle_arbitary_boundary_pressure;
+    private int           _handle_add_dye                         ;
+    private int           _handle_add_constant_dye_source         ;
+    private int           _handle_st2tx                           ;
+    private int           _handle_Jacobi_Solve                    ;
+    private int           _handle_Copy_StructuredBuffer           ;
+    private int           _handle_Clear_StructuredBuffer          ;
+    private int           _handle_add_dye_from_texture            ;
+    private int           _handle_NeuMannBoundary                 ;
+    private int           _handle_addForceWithMouse               ;
+    private int           _handle_add_constant_force_source       ;
+    private int           _handle_advection                       ;
+    private int           _handle_divergence                      ;
+    private int           _handle_calculate_divergence_free       ;
+    private int           _handle_update_arbitary_boundary_offset ;
+    private int           _handle_arbitary_boundary_velocity      ;
+    private int           _handle_arbitary_boundary_pressure      ;
     private int           _handle_arbitary_boundary_dye           ;
 
     private Vector2       mouse_previus_pos;
@@ -167,6 +169,7 @@ public class FluidSimulater
         // Setting kernel handles
 
         _handle_add_dye                         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
+        _handle_add_constant_dye_source         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_dye"            );
         _handle_add_dye_from_texture            =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"         );
         _handle_st2tx                           =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
         _handle_Jacobi_Solve                    =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
@@ -174,6 +177,7 @@ public class FluidSimulater
         _handle_Clear_StructuredBuffer          =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
         _handle_NeuMannBoundary                 =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
         _handle_addForceWithMouse               =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
+        _handle_add_constant_force_source       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_force_at"       );
         _handle_advection                       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
         _handle_divergence                      =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
         _handle_calculate_divergence_free       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "calculate_divergence_free"   );
@@ -236,6 +240,21 @@ public class FluidSimulater
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_addForceWithMouse, simulation_dimension, simulation_dimension, 1);
     }
 
+    public void AddConstantForceSource(ComputeBuffer force_buffer, Vector2 sourcePosiiton,  Vector2 forceDirection, float forceStrength, float sourceRadius, float sourceFalloff)
+    {
+        if(!IsValid()) return;
+        forceDirection.Normalize();
+
+        UserInputShader.SetVector("_constant_force_source_direction", forceDirection * forceStrength);
+        UserInputShader.SetVector("_constant_force_source_position",  sourcePosiiton                );
+        UserInputShader.SetFloat ("_constant_force_radius",           sourceRadius                  );
+        UserInputShader.SetFloat ("_constant_force_falloff",          sourceFalloff                 );
+
+
+        SetBufferOnCommandList(sim_command_buffer, force_buffer, "_user_applied_force_buffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_constant_force_source, simulation_dimension, simulation_dimension, 1);
+    }
+
 
     public void AddDye(ComputeBuffer dye_buffer)
     {
@@ -243,6 +262,18 @@ public class FluidSimulater
 
         SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_dye, simulation_dimension, simulation_dimension, 1);
+    }
+
+    public void AddConstantDyeSource(ComputeBuffer dye_buffer, Vector2 dyeSourcePosiiton)
+    {
+        if (!IsValid()) return;
+
+        UserInputShader.SetFloat ("_constant_dye_radius",          dye_radius );
+        UserInputShader.SetFloat ("_constant_dye_falloff",         dye_falloff);
+        UserInputShader.SetVector("_constant_dye_source_position", dyeSourcePosiiton);
+
+        SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_constant_dye_source, simulation_dimension, simulation_dimension, 1);
     }
 
     public void AddDyeFromTexture(ComputeBuffer dye_buffer, Texture2D source_tex, bool one_time)
