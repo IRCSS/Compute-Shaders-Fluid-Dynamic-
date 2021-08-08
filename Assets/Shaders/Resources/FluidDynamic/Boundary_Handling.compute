@@ -7,6 +7,7 @@
 #pragma kernel UpdateArbitaryBoundaryOffset
 #pragma kernel ArbitaryBoundaryVelocity
 #pragma kernel ArbitaryBoundaryPressure
+#pragma kernel ArbitaryBoundaryDye
 
 //____________________________________________________________________________________
 // DECLERNATIONS
@@ -182,3 +183,15 @@ void ArbitaryBoundaryPressure(uint3 id : SV_DispatchThreadID)
     float4 newPressure = (_pressure_buffer[id2Dto1D(id.xy + offsets.xy)] + _pressure_buffer[id2Dto1D(id.xy + offsets.zw)]) * 0.5;
     _new_handleded_pressure[id2Dto1D(id.xy)] = newPressure;
 } 
+
+StructuredBuffer<int4>     _perCellArbitaryBoundryOffsetsDye;
+StructuredBuffer<float4>   _dye_buffer;
+RWStructuredBuffer<float4> _new_handleded_dye;
+
+[numthreads(16, 16, 1)]                                                      // This will run once per grid cell
+void ArbitaryBoundaryDye(uint3 id : SV_DispatchThreadID)
+{
+    int4 scaleOffset = _perCellArbitaryBoundryOffsetsDye[id2Dto1D(id.xy)];
+    _new_handleded_dye[id2Dto1D(id.xy)] = _dye_buffer[id2Dto1D(id.xy)] * scaleOffset.z;
+
+}

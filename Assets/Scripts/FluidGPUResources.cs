@@ -19,9 +19,10 @@ public class FluidGPUResources
 
     public ComputeBuffer cardinal_diections_LUT_Velocity;
     public ComputeBuffer cardinal_diections_LUT_Presure ;
+    public ComputeBuffer cardinal_diections_LUT_Dye     ;
     public ComputeBuffer boundary_velocity_offset_buffer;
     public ComputeBuffer boundary_pressure_offset_buffer;
-    public ComputeBuffer boundary_dye_buffer            ;
+    public ComputeBuffer boundary_dye_offset_buffer     ;
 
     public static ComputeBuffer buffer_ping;
     public static ComputeBuffer buffer_pong;
@@ -55,15 +56,18 @@ public class FluidGPUResources
     // DESTRUCTOR
     public void Release()
     {
-        velocity_buffer                .Release();
-        dye_buffer                     .Release();
-        divergence_buffer              .Release();
-        pressure_buffer                .Release();
-        buffer_ping                    .Release();
-        buffer_pong                    .Release();
-        boundary_velocity_offset_buffer       .Release();
-        cardinal_diections_LUT_Velocity.Release();
-        cardinal_diections_LUT_Presure .Release();
+        velocity_buffer                 .Release();
+        dye_buffer                      .Release();
+        divergence_buffer               .Release();
+        pressure_buffer                 .Release();
+        buffer_ping                     .Release();
+        buffer_pong                     .Release();
+        boundary_velocity_offset_buffer .Release();
+        boundary_dye_offset_buffer      .Release();
+        boundary_pressure_offset_buffer .Release();
+        cardinal_diections_LUT_Velocity .Release();
+        cardinal_diections_LUT_Presure  .Release();
+        cardinal_diections_LUT_Dye      .Release();
     }
 
     // ------------------------------------------------------------------
@@ -79,12 +83,14 @@ public class FluidGPUResources
         buffer_ping                       = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
         cardinal_diections_LUT_Velocity   = new ComputeBuffer(32                                           , sizeof(int)   * 4);
         cardinal_diections_LUT_Presure    = new ComputeBuffer(32                                           , sizeof(int)   * 4);
+        cardinal_diections_LUT_Dye        = new ComputeBuffer(32                                           , sizeof(int)   * 4);
         boundary_velocity_offset_buffer   = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
         boundary_pressure_offset_buffer   = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
-        boundary_dye_buffer               = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
+        boundary_dye_offset_buffer        = new ComputeBuffer(simulation_dimensions * simulation_dimensions, sizeof(float) * 4);
 
         cardinal_diections_LUT_Velocity.SetData(ArbitaryBoundaryLUTGenerator.GetVelocityLUT(), 0, 0,  32);
         cardinal_diections_LUT_Presure .SetData(ArbitaryBoundaryLUTGenerator.GetPressureLUT(), 0, 0,  32);
+        cardinal_diections_LUT_Dye     .SetData(ArbitaryBoundaryLUTGenerator.GetDyeLUT(),      0, 0,  32);
         
     }
 

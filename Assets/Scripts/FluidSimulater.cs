@@ -83,6 +83,7 @@ public class FluidSimulater
     private int           _handle_update_arbitary_boundary_offset;
     private int           _handle_arbitary_boundary_velocity;
     private int           _handle_arbitary_boundary_pressure;
+    private int           _handle_arbitary_boundary_dye           ;
 
     private Vector2       mouse_previus_pos;
     private bool          mouse_previus_outofBound;
@@ -179,7 +180,7 @@ public class FluidSimulater
         _handle_update_arbitary_boundary_offset =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "UpdateArbitaryBoundaryOffset");
         _handle_arbitary_boundary_velocity      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryVelocity"    );
         _handle_arbitary_boundary_pressure      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryPressure"    );
-
+        _handle_arbitary_boundary_dye           =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryDye"         );
 
         
         
@@ -444,11 +445,78 @@ public class FluidSimulater
         BorderShader.Dispatch(_handle_update_arbitary_boundary_offset,
             (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
 
+        // Dye
+        // ----------
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_arbitaryBoundaryCardinalDirectionsLUT", resource_instance.cardinal_diections_LUT_Dye);
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_perCellArbitaryBoundryOffsets",         resource_instance.boundary_dye_offset_buffer);
+
+        BorderShader.Dispatch(_handle_update_arbitary_boundary_offset,
+            (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
+
     }
 
-    public void HandleArbitaryBoundary(ComputeBuffer SetBoundaryOn, FieldType fieldType)
+    public void HandleArbitaryBoundary(ComputeBuffer SetBoundaryOn, ComputeBuffer offsetBuffer, FieldType fieldType)
     {
+        if (!IsValid()) return;
+        switch (fieldType)
+        {
+            case FieldType.Velocity:
 
+                SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn, "_velocity_buffer");
+                SetBufferOnCommandList(sim_command_buffer, offsetBuffer,  "_perCellArbitaryBoundryOffsetsVellocity");
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_new_handleded_velocity");
+
+                DispatchComputeOnCommandBuffer(sim_command_buffer, BorderShader, _handle_arbitary_boundary_velocity, simulation_dimension, simulation_dimension, 1);
+
+                // -------------
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
+                SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn,                 "_Copy_Target");
+
+                DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+
+                // -------------
+                ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+
+                return;
+
+
+            case FieldType.Pressure:
+
+                SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn, "_pressure_buffer");
+                SetBufferOnCommandList(sim_command_buffer, offsetBuffer,  "_perCellArbitaryBoundryOffsetsPressure");
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_new_handleded_pressure");
+
+                DispatchComputeOnCommandBuffer(sim_command_buffer, BorderShader, _handle_arbitary_boundary_pressure, simulation_dimension, simulation_dimension, 1);
+
+                // -------------
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
+                SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn,                 "_Copy_Target");
+
+                DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+
+                // -------------
+                ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+                
+                return;
+            case FieldType.Dye:
+
+                SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn, "_dye_buffer");
+                SetBufferOnCommandList(sim_command_buffer, offsetBuffer, "_perCellArbitaryBoundryOffsetsDye");
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_new_handleded_dye");
+
+                DispatchComputeOnCommandBuffer(sim_command_buffer, BorderShader, _handle_arbitary_boundary_dye, simulation_dimension, simulation_dimension, 1);
+
+                // -------------
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
+                SetBufferOnCommandList(sim_command_buffer, SetBoundaryOn, "_Copy_Target");
+
+                DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+
+                // -------------
+                ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+
+                return;
+        }
     }
 
 
