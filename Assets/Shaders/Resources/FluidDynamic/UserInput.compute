@@ -178,7 +178,7 @@ void Add_constant_force_at(uint3 id : SV_DispatchThreadID)
     float  forceMask = smoothstep(_constant_force_radius,
         _constant_force_radius - _constant_force_falloff, disToSource);                 // Calculate the distance to the mouse pos and decide wether this cell is close neough by the mouse to be effected by it
 
-    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(forceMask *(_constant_force_source_direction.xy + float2(sin(i_Time + id.x*0.05)*.5 + sin(i_Time *0.5 +0.1 + id.x*0.05)*0.5, 0.)), 0., 0.);
+    _user_applied_force_buffer[id2Dto1D(id.xy)] += float4(forceMask *_constant_force_source_direction.xy, 0., 0.);
 }
  
 

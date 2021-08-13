@@ -246,11 +246,15 @@ public class FluidSimulater
         if(!IsValid()) return;
         forceDirection.Normalize();
 
-        UserInputShader.SetVector("_constant_force_source_direction", forceDirection * forceStrength);
-        UserInputShader.SetVector("_constant_force_source_position",  sourcePosiiton                );
-        UserInputShader.SetFloat ("_constant_force_radius",           sourceRadius                  );
-        UserInputShader.SetFloat ("_constant_force_falloff",          sourceFalloff                 );
+        //UserInputShader.SetVector("_constant_force_source_direction", forceDirection * forceStrength);
+        //UserInputShader.SetVector("_constant_force_source_position",  sourcePosiiton                );
+        //UserInputShader.SetFloat ("_constant_force_radius",           sourceRadius                  );
+        //UserInputShader.SetFloat ("_constant_force_falloff",          sourceFalloff                 );
 
+        sim_command_buffer.SetComputeFloatParam(UserInputShader, "_constant_force_radius", sourceRadius);
+        sim_command_buffer.SetComputeFloatParam(UserInputShader, "_constant_force_falloff", sourceFalloff);
+        sim_command_buffer.SetComputeVectorParam(UserInputShader, "_constant_force_source_position", sourcePosiiton);
+        sim_command_buffer.SetComputeVectorParam(UserInputShader, "_constant_force_source_direction", forceDirection * forceStrength);
 
         SetBufferOnCommandList(sim_command_buffer, force_buffer, "_user_applied_force_buffer");
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_constant_force_source, simulation_dimension, simulation_dimension, 1);
@@ -276,10 +280,13 @@ public class FluidSimulater
     {
         if (!IsValid()) return; 
 
-        UserInputShader.SetFloat ("_constant_dye_radius",          dye_radius );
-        UserInputShader.SetFloat ("_constant_dye_falloff",         dye_falloff);
-        UserInputShader.SetVector("_constant_dye_source_position", dyeSourcePosiiton);
+        //UserInputShader.SetFloat ("_constant_dye_radius",          dye_radius );
+        //UserInputShader.SetFloat ("_constant_dye_falloff",         dye_falloff);
+        //UserInputShader.SetVector("_constant_dye_source_position", dyeSourcePosiiton);
 
+        sim_command_buffer.SetComputeFloatParam(UserInputShader, "_constant_dye_radius", dye_radius);
+        sim_command_buffer.SetComputeFloatParam(UserInputShader, "_constant_dye_falloff", dye_falloff);
+        sim_command_buffer.SetComputeVectorParam(UserInputShader, "_constant_dye_source_position", dyeSourcePosiiton);
         SetBufferOnCommandList(sim_command_buffer, dye_buffer, "_dye_buffer");
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_constant_dye_source, simulation_dimension, simulation_dimension, 1);
     }

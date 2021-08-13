@@ -44,7 +44,9 @@
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col = tex2D(_MainTex, i.uv);
-            col.xyz = lerp(col, float3(0.3, 0.3, 0.3), tex2D(_extraToOverlayImage, i.uv).x);
+            float4 mask = tex2D(_extraToOverlayImage, i.uv);
+            col.xyz = lerp(col, float3(0.1, 0.1, 0.1)*0.2, mask.x);
+            col.xyz = lerp(col, float3(0., 0., 0.)*1.0, mask.y);
                 return col;
             }
             ENDCG

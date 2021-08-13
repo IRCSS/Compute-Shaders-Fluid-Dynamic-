@@ -30,11 +30,13 @@
             struct v2f
             {
                 float2 uv       : TEXCOORD0;
+                float4 refCamPos: TEXCOORD2;
                 float4 vertex   : SV_POSITION;
                 float4 worldPos : TEXCOORD1;
             };
              
             sampler2D _fountain_pressure_buffer;
+            sampler2D _Refelection_texture;
             float4    _Color;
             float4    _Color2;
             float4    _fountain_downLeft;
@@ -43,11 +45,22 @@
             float2    _canvas_texel_size;
             float3    _lightDirection;
             float4x4  _fountain2World;
+            float4x4  _ref_cam_tranform;
+            float2    _refCamScreenParm;
+
+            inline float4 computeRefCamScreePos(float4 pos)
+            {
+                float4 o = pos * 0.5f;
+                o.xy = float2(o.x, o.y *-1.0f) + o.w;
+                o.zw = pos.zw;
+                return o;
+            }
 
             v2f vert (appdata v)
             {
                 v2f o;
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+                float4 originalWorldPos = o.worldPos;
 
                 float2 uv  = (o.worldPos.zx - _fountain_downLeft.zx) ;
                        uv  = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
@@ -55,12 +68,15 @@
 
                float clampAt = 1.5f;
 
-               float clampValue = clampAt + pressureBuffer / 40.;
+               float clampValue = clamp( pressureBuffer,-0.25, 0.25) ;
+
+               float4 disVector = float4(0., _displacment * clampValue, 0., 0.);
 
                //pressureBuffer = lerp(clampValue, pressureBuffer, saturate((clampAt - pressureBuffer) / 2.));
-
-                o.vertex   = UnityObjectToClipPos(v.vertex + float4(0., _displacment * pressureBuffer, 0., 0.));
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex + disVector);
+                o.vertex   = UnityObjectToClipPos(v.vertex + disVector);
                 o.uv       = uv;
+                o.refCamPos = computeRefCamScreePos(mul(_ref_cam_tranform, float4(originalWorldPos.xyz, 1.)));
                 return o;
             }
 
@@ -91,23 +107,29 @@
                 float3 normal  = filterNormal(i.uv, _canvas_texel_size);
                        normal  = mul(_fountain2World, float4(normal.xyz, 0.));
                        //normal.xzy = normal.zxy;
+               float3 normalInRefSpace = mul(_ref_cam_tranform, float4(normal.xyz - float3(0.,1.,0.), 0.));
+
                 float  diffuse = saturate(dot(normal, -1.0*_lightDirection));
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
 
-                float3 specularReflection;
-                if (dot(normal, -_lightDirection) < 0.0) specularReflection = float3(0.0, 0.0, 0.0);
+                float4 specularReflection;
+                float specRefAmount;
+                if (dot(normal, -_lightDirection) < 0.0) specularReflection = float4(0.0, 0.0, 0.0, 0.);
                 else 
                 {
-                    specularReflection = float3(1., 1., 0.8) * pow(max(0., dot(reflect(_lightDirection, normal), viewDir)), 40.);
+                    specRefAmount = pow(max(0., dot(reflect(_lightDirection, normal), viewDir)), 100.);
+                    specularReflection = float4(1., 1., 1., 1.) *specRefAmount;
                 }
                 
+                float2 refCamUV = i.refCamPos.xy / i.refCamPos.w;
+                float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy  + clamp(float2( normalInRefSpace.x, normalInRefSpace.y)*0.1,-0.01, 0.01), 0., 0.));
 
 
                 fixed4 col = tex2Dlod(_fountain_pressure_buffer, float4(i.uv.xy,0.,0.));
                 col.xyz = smoothstep(-0.1, 0.1, col.xyz);
-                col.xyz = lerp(_Color, _Color2, col.x) * diffuse + float3(0.2, 0.2, 0.2) + specularReflection;
+                col.xyzw = /*lerp(_Color, _Color2, col.x) * diffuse + *//*float4(0.2, 0.2, 0.2, 0.1)*/ refCamCol  + specularReflection;
                 //return float4(i.uv.xy, 0., 1.);
-                return float4(col.xyz, _Color.a);
+                return float4(col.xyzw  );
             }
             ENDCG
         }

@@ -193,5 +193,4 @@ void ArbitaryBoundaryDye(uint3 id : SV_DispatchThreadID)
 {
     int4 scaleOffset = _perCellArbitaryBoundryOffsetsDye[id2Dto1D(id.xy)];
     _new_handleded_dye[id2Dto1D(id.xy)] = _dye_buffer[id2Dto1D(id.xy)] * scaleOffset.z;
-
 }
