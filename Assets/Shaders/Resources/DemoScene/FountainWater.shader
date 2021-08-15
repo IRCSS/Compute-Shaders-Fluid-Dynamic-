@@ -12,10 +12,10 @@
     {
         // ----------------------------------------------------------------
         // Draw bindings
-        Tags { "Queue" = "Transparent" "RenderType" = "Transparent" }
+        Tags { "RenderType" = "Opaque" }
         LOD 100
-        Blend SrcAlpha OneMinusSrcAlpha
-        ZWrite Off
+      
+   
 
 
         Pass
@@ -23,6 +23,7 @@
             CGPROGRAM
             #pragma vertex   vert
             #pragma fragment frag
+
 
             #include "UnityCG.cginc"
 
@@ -38,12 +39,14 @@
             {
                 float2 uv        : TEXCOORD0;
                 float4 refCamPos : TEXCOORD2;
+                float4 screenPos : TEXCOORD3;
                 float4 vertex    : SV_POSITION;
                 float4 worldPos  : TEXCOORD1;
             };
              
             sampler2D _fountain_pressure_buffer;
             sampler2D _Refelection_texture;
+            sampler2D _Refraction_texture;
   
             float4    _fountain_downLeft;
             float4    _fountain_upRight;
@@ -69,18 +72,26 @@
                 return o;
             }
 
+            float pressureToneMapping(float pressure)
+            {
+
+                float clampValue = clamp(pressure, -0.25, 0.25);
+
+                return clampValue;
+            }
+
             // Calculate a normal from a height map
             float3 filterNormal(float2 uv, float texelSize)
             {
                 float4 h;
                 float2 t = uv + texelSize * float2(0, -1);
-                h[0] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
+                h[0] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
                 t = uv + texelSize * float2(-1, 0);
-                h[1] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
+                h[1] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
                 t = uv + texelSize * float2(1, 0);
-                h[2] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
+                h[2] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
                 t = uv + texelSize * float2(0, 1);
-                h[3] = tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.))* _displacment;
+                h[3] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
 
                 float3 n;
                 n.x = -(h[0] - h[3]);
@@ -90,10 +101,17 @@
                 return normalize(n);
             }
 
+
+
             // The fresnel factor determines how much reflection should exist based on view direction
             float3 fresnelSchlick(float cosTheta, float3 F0)  // cos theta is the dot product between half vector and view direction and F0 is the fresnel factor for 0 degree (looking up side down) on the water, for water this value is float3(0.02)
             {
                 return F0 + (1.0 - F0) *  pow(max(1.0 - cosTheta, 0.0), 5.0);
+            }
+
+            float3 fresnelSchlickRoughness(float cosTheta, float3 F0, float roughness)  // I am not taking the geometry and ndf into account for the specularity of the planar reflection. To compensate for too strong planar refelection, there is a variation that takes the roughness, as explained by Sebastien Lagarde https://seblagarde.wordpress.com/2011/08/17/hello-world/
+            {
+                return F0 + (max(float3((1.0 - roughness).xxx), F0) - F0) *  pow(max(1.0 - cosTheta, 0.0), 5.0);
             }
 
             // Calculates how aligned the micro facets are to the half way vector
@@ -134,6 +152,7 @@
 
 
 
+
             // -------------------------------------------------------------
             // Vertex Shader
             v2f vert (appdata v)
@@ -146,15 +165,13 @@
                        uv  = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
                float   pressureBuffer = tex2Dlod(_fountain_pressure_buffer, float4(uv.xy, 0, 0));
 
-               float clampAt = 1.5f;
 
-               float clampValue = clamp( pressureBuffer,-0.25, 0.25) ;
+               float4 disVector = float4(0., pressureToneMapping(pressureBuffer), 0., 0.);
 
-               float4 disVector = float4(0., _displacment * clampValue, 0., 0.);
-
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex + disVector);
-                o.vertex   = UnityObjectToClipPos(v.vertex + disVector);
-                o.uv       = uv;
+                o.worldPos  = mul(unity_ObjectToWorld, v.vertex + disVector);
+                o.vertex    = UnityObjectToClipPos(v.vertex + disVector);
+                o.uv        = uv;
+                o.screenPos = ComputeScreenPos(o.vertex);
                 o.refCamPos = computeRefCamScreePos(mul(_ref_cam_tranform, float4(originalWorldPos.xyz, 1.)));
                 return o;
             }
@@ -181,7 +198,7 @@
 
                 float LightRadiance = float4(1., 1., 1., 1.) *10.0;
                 float NdotL         = max(dot(normal, L), 0.0);
-
+                float NdotV         = dot(normal, viewDir);
                 // Fresnel factor
                 float3 F0        = float3(0.02,0.02,0.02);                        // value of F0 for water
       
@@ -194,13 +211,29 @@
                 float3 kD = float3(1.0,1.,1.) - kS;
 
                 float3 numerator   =NDF * G * F;
-                float  denominator = 4.0 * max(dot(normal, viewDir), 0.0) * NdotL;
+                float  denominator = 4.0 * max(NdotV, 0.0) * NdotL;
                 float3 specular    = numerator / max(denominator, 0.001);
 
-                float2 refCamUV = i.refCamPos.xy / i.refCamPos.w;
-                float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x, normalInRefSpace.y)*0.1, -0.01, 0.01), 0., 0.));
 
-                float3 col = (kD * float3(0.0,0.,0.) / PI + specular) * LightRadiance * NdotL;
+
+                float3 specularDirLight =  specular * LightRadiance * NdotL; // No need for a diffuse term, as clean transparent water doesnt have any. The refaraction part is light incoming from the other side of the water, so the energy conservation term is different: out going light = in coming specular reflected light + light coming from under the water (the rendered scene)
+               
+                // Add the planar refelection
+                float2  refCamUV = i.refCamPos.xy / i.refCamPos.w;
+                float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x, normalInRefSpace.y)*0.1, -0.01, 0.01), 0., 0.));
+                
+                kS = fresnelSchlickRoughness(max(NdotV, 0.0), F0, _roughness);
+
+                float displacmentStrenght = abs(normal.x) + abs(normal.z) + 1. - normal.y;
+                displacmentStrenght = smoothstep(0.5, 0.6, displacmentStrenght);
+
+                kS = min(kS, lerp(1., 0.5, displacmentStrenght));
+
+                float2 screenPosition = (i.screenPos.xy / i.screenPos.w);
+                float3 refraction = tex2D(_Refraction_texture, screenPosition);
+                float3 col = kS * refCamCol.xyz + (1.-kS)*refraction + specularDirLight;
+
+
                 return float4(col.xyz, 1.);
 
 

@@ -73,6 +73,7 @@ Material:
     - _UVSec: 0
     - _ZWrite: 1
     - _displacment: 1
+    - _roughness: 0.1
     m_Colors:
     - _Color: {r: 0.7216981, g: 0.80286944, b: 1, a: 0.2509804}
     - _Color2: {r: 0.8349056, g: 0.90916777, b: 1, a: 0.27450982}

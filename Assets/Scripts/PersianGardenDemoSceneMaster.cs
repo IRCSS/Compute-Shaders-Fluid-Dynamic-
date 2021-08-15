@@ -20,8 +20,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     public GameObject Fountain;
     public GameObject FountainPlain;
     public Texture2D  boundaryTexture;
-
-    public bool       debug_ink;
+    
 
     //___________
     // private
@@ -33,6 +32,10 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     private Camera            main_cam;
     private Camera            reflection_cam;
     private RenderTexture     reflection_cam_texture;
+    private RenderTexture     refraction_cam_texture;
+
+    private CommandBuffer     render_water_cb;
+
     // ------------------------------------------------------------------
     // INITALISATION
     void Start()
@@ -50,10 +53,15 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         reflection_cam_texture = new RenderTexture(main_cam.pixelWidth, main_cam.pixelHeight, 8);
         reflection_cam_texture.Create();
 
+        refraction_cam_texture = new RenderTexture(reflection_cam_texture.descriptor);
+        refraction_cam_texture.Create();
+
+
         reflection_cam.targetTexture = reflection_cam_texture;
 
         Shader.SetGlobalTexture("_Refelection_texture", reflection_cam_texture);
-        Shader.SetGlobalVector("_refCamScreenParm", new Vector2(main_cam.pixelWidth, main_cam.pixelHeight));
+        Shader.SetGlobalTexture("_Refraction_texture", refraction_cam_texture);
+        Shader.SetGlobalVector ("_refCamScreenParm", new Vector2(main_cam.pixelWidth, main_cam.pixelHeight));
 
         //--
 
@@ -86,41 +94,70 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         fluid_simulater.UpdateArbitaryBoundaryOffsets(boundaryTexture, resources);
 
+        Vector2 waterpipePosition  = new Vector2(fluid_simulater.simulation_dimension / 2, fluid_simulater.simulation_dimension - fluid_simulater.simulation_dimension*0.1f);
+        Vector2 waterPipeDirection = new Vector2(0.0f, -1.0f); 
 
         fluid_simulater.AddUserForce           (resources.velocity_buffer                                   );
+        fluid_simulater.AddConstantForceSource (resources.velocity_buffer, waterpipePosition,
+                                                waterPipeDirection, 0.4f, fluid_simulater.simulation_dimension* 0.0025f, fluid_simulater.simulation_dimension*0.001f);
+
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
         fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
-        fluid_simulater.HandleArbitaryBoundary(resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary(resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
+        fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
+        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
         fluid_simulater.Diffuse                (resources.velocity_buffer                                   );
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
         fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
-        fluid_simulater.HandleArbitaryBoundary(resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary(resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
+        fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
+        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
         fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
         fluid_simulater.Advect                 (resources.velocity_buffer, resources.velocity_buffer, fluid_simulater.velocity_dissapation);
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
         fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
-        fluid_simulater.HandleArbitaryBoundary(resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary(resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
+        fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
+        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
         fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
         
 
-        //fluid_simulater.AddDye                 (resources.dye_buffer                                        );
-        //fluid_simulater.Advect                 (resources.dye_buffer, resources.velocity_buffer, 0.9999f    );
-        //fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye                         );
-        //fluid_simulater.Diffuse                (resources.dye_buffer                                        );
-        //fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye                         );
 
 
         fluid_simulater.CopyBufferToTexture(pressure_texture, resources.pressure_buffer);
 
         Shader.SetGlobalTexture("_fountain_pressure_buffer", pressure_texture);
 
-        
-
-
         fluid_simulater.BindCommandBuffer();
+
+
+        render_water_cb = new CommandBuffer()
+        {
+            name = "Render Water Plane"
+        };
+
+        MeshRenderer fountainRender = Fountain.GetComponent<MeshRenderer>();
+        if (!fountainRender)
+        {
+            Debug.LogError("Could not find the Rendeer on the provided game object for the Fountain water mesh");
+            return;
+        }
+        Material fountainMat = fountainRender.sharedMaterial;
+        if (!fountainMat)
+        {
+            Debug.LogError("No Valid Material found on the mesh renderer of the provided Fountain Mesh");
+            return;
+        }
+
+        // Copy the content of the frame buffer into a texture to be sampled for refraction
+
+
+        render_water_cb.Blit(BuiltinRenderTextureType.CameraTarget, refraction_cam_texture);
+        render_water_cb.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+
+        render_water_cb.DrawRenderer(fountainRender, fountainMat);
+
+
+        main_cam.AddCommandBuffer(CameraEvent.BeforeForwardAlpha, render_water_cb);
+
+
 
     }
 
