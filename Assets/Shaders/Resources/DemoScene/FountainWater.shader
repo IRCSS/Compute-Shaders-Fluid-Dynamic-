@@ -51,11 +51,13 @@
             float4    _fountain_downLeft;
             float4    _fountain_upRight;
             float     _displacment;
+            float     _aspect_ration_multiplier;
             float2    _canvas_texel_size;
             float3    _lightDirection;
             float4x4  _fountain2World;
             float4x4  _ref_cam_tranform;
             float2    _refCamScreenParm;
+            float3    _main_camera_forward;
             float     _roughness;
             #define PI 3.1415926
 
@@ -71,6 +73,12 @@
                 o.zw = pos.zw;
                 return o;
             }
+
+            inline float3 GetCameraForward()                 //
+            {
+                return float3(UNITY_MATRIX_V[2][0], UNITY_MATRIX_T_MV[2][1], UNITY_MATRIX_T_MV[2][2]);
+            }
+  
 
             float pressureToneMapping(float pressure)
             {
@@ -189,7 +197,7 @@
                        normal  = mul(_fountain2World, float4(normal.xyz, 0.));                                  // Calculate the surface normal. This is the normal of the plane, but modified by the height map displacement
 
                 float3 normalInRefSpace = mul(_ref_cam_tranform, float4(normal.xyz - float3(0.,1.,0.), 0.));    // This is used to offset the texture read of the planar camera. Based on how much the normal deviates from the standard plane normal
-
+                float3 normalInCamSpace = mul(UNITY_MATRIX_V, normal);
 
                 float3 L       = -_lightDirection;
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
@@ -200,7 +208,7 @@
                 float NdotL         = max(dot(normal, L), 0.0);
                 float NdotV         = dot(normal, viewDir);
                 // Fresnel factor
-                float3 F0        = float3(0.02,0.02,0.02);                        // value of F0 for water
+                float3 F0        = float3(0.02, 0.02, 0.02);                        // value of F0 for water
       
                 float3 F  = fresnelSchlick(max(dot(halfVec, viewDir), 0.0), F0);  // Fresnel factor
 
@@ -208,7 +216,7 @@
                 float G   = GeometrySmith  (normal, viewDir, L, _roughness);
 
                 float3 kS = F;
-                float3 kD = float3(1.0,1.,1.) - kS;
+                float3 kD = float3(1.,1.,1.) - kS;
 
                 float3 numerator   =NDF * G * F;
                 float  denominator = 4.0 * max(NdotV, 0.0) * NdotL;
@@ -220,42 +228,27 @@
                
                 // Add the planar refelection
                 float2  refCamUV = i.refCamPos.xy / i.refCamPos.w;
-                float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x, normalInRefSpace.y)*0.1, -0.01, 0.01), 0., 0.));
+                float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x, normalInRefSpace.y * _aspect_ration_multiplier)*0.2, -0.02, 0.02), 0., 0.));
                 
                 kS = fresnelSchlickRoughness(max(NdotV, 0.0), F0, _roughness);
 
                 float displacmentStrenght = abs(normal.x) + abs(normal.z) + 1. - normal.y;
-                displacmentStrenght = smoothstep(0.5, 0.6, displacmentStrenght);
+                      displacmentStrenght = smoothstep(0.5, 0.6, displacmentStrenght);
 
-                kS = min(kS, lerp(1., 0.5, displacmentStrenght));
 
+
+                //kS = min(kS, lerp(1., 0.5, displacmentStrenght));
                 float2 screenPosition = (i.screenPos.xy / i.screenPos.w);
-                float3 refraction = tex2D(_Refraction_texture, screenPosition);
-                float3 col = kS * refCamCol.xyz + (1.-kS)*refraction + specularDirLight;
+
+                float3 SSR = tex2D(_Refraction_texture, screenPosition + viewDir.xy*0.025 * float2(1., _aspect_ration_multiplier));
+           
+                float3 reflection = lerp(refCamCol.xyz, SSR, (1. - normal.y));
+                float3 refraction = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy * -0.012 * float2(1., _aspect_ration_multiplier));
+                float3 col = kS * reflection + (1.-kS)*refraction + specularDirLight;
 
 
                 return float4(col.xyz, 1.);
 
-
-                //float  diffuse = saturate(dot(normal, -1.0*_lightDirection));
-
-                //float4 specularReflection;
-                //float specRefAmount;
-                //if (dot(normal, -_lightDirection) < 0.0) specularReflection = float4(0.0, 0.0, 0.0, 0.);
-                //else 
-                //{
-                //    specRefAmount = pow(max(0., dot(reflect(_lightDirection, normal), viewDir)), 100.);
-                //    specularReflection = float4(1., 1., 1., 1.) *specRefAmount;
-                //}
-                //
-                //float2 refCamUV = i.refCamPos.xy / i.refCamPos.w;
-                //float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy  + clamp(float2( normalInRefSpace.x, normalInRefSpace.y)*0.1,-0.01, 0.01), 0., 0.));
-
-
-                //fixed4 col = tex2Dlod(_fountain_pressure_buffer, float4(i.uv.xy,0.,0.));
-                //col.xyz = smoothstep(-0.1, 0.1, col.xyz);
-                //col.xyzw = refCamCol  + specularReflection;
-                //return float4(col.xyzw  );
             }
             ENDCG
         }

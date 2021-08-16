@@ -89,6 +89,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         Shader.SetGlobalVector("_canvas_texel_size", new Vector4(1.0f/fluid_simulater.canvas_dimension, 1.0f / fluid_simulater.canvas_dimension, 0.0f, 0.0f));
         Shader.SetGlobalVector("_lightDirection"   , mainDirectionLight.forward);
         Shader.SetGlobalMatrix("_fountain2World"   , Tran_downLeft.localToWorldMatrix);
+        Shader.SetGlobalFloat ("_aspect_ration_multiplier", (float)main_cam.pixelWidth/ (float)main_cam.pixelHeight);
 
         //--
 
@@ -176,9 +177,9 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         fluid_simulater.Tick(Time.deltaTime);
 
 
-        Shader.SetGlobalVector("_fountain_downLeft", Tran_downLeft.position);
-        Shader.SetGlobalVector("_fountain_upRight", Tran_upRight.position  );
-
+        Shader.SetGlobalVector("_fountain_downLeft",   Tran_downLeft.position);
+        Shader.SetGlobalVector("_fountain_upRight",    Tran_upRight.position  );
+        Shader.SetGlobalVector("_main_camera_forward", main_cam.transform.forward);
         // Update ref cam
 
 
