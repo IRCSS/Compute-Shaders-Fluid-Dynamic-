@@ -5,8 +5,12 @@
 
     Properties
     {
-        _displacment("water Displacemnet", Float) = 0.5
+        _DisplacementStrength    ("water  Displacemnet, displacement", Float) = 5
+        _MaxDisplacement         ("water max Displacemnet", Float) = 5
+        _DisplacementDistribution("Displacemnet Distribution", Float) = 0.2
         _roughness  ("water roughness", Float) = 0.1
+        _waterColor ("Color", Color) = (1., 1., 1., 1.)
+        
     }
     SubShader
     {
@@ -47,10 +51,14 @@
             sampler2D _fountain_pressure_buffer;
             sampler2D _Refelection_texture;
             sampler2D _Refraction_texture;
-  
+            sampler2D _CameraDepth_Texture;
+
             float4    _fountain_downLeft;
             float4    _fountain_upRight;
-            float     _displacment;
+            float4    _waterColor;
+            float     _MaxDisplacement;
+            float     _DisplacementStrength;
+            float     _DisplacementDistribution;
             float     _aspect_ration_multiplier;
             float2    _canvas_texel_size;
             float3    _lightDirection;
@@ -58,6 +66,7 @@
             float4x4  _ref_cam_tranform;
             float2    _refCamScreenParm;
             float3    _main_camera_forward;
+            float3    _ref_cam_position;
             float     _roughness;
             #define PI 3.1415926
 
@@ -83,7 +92,13 @@
             float pressureToneMapping(float pressure)
             {
 
-                float clampValue = clamp(pressure, -0.25, 0.25);
+                float clampValue = clamp(pressure / _MaxDisplacement, -1.0, 1.0);
+                      clampValue = pow(abs(clampValue), _DisplacementDistribution) * sign(clampValue);
+                      clampValue = lerp(clampValue, pressure/30. , pow(1.-saturate(abs(pressure)),4.2)) * _DisplacementStrength;
+
+                //float clampValue = abs(pressure);
+                //      clampValue = clampValue/(clampValue+1.0);
+                //      clampValue = pow(abs(clampValue), _DisplacementDistribution) * _DisplacementStrength * sign(pressure);
 
                 return clampValue;
             }
@@ -201,12 +216,15 @@
 
                 float3 L       = -_lightDirection;
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
+                float3 viewDirRefCam = normalize(_ref_cam_position.xyz - i.worldPos.xyz);
                 float3 halfVec = normalize(L + viewDir);
                 // The concept behind lighting the water is to sum up the refracted and refelected components of the light. The refracted is the screen texture behind the water plane, and the reflected is the palanr refelection camera texture + specular highlights of the directional light
 
                 float LightRadiance = float4(1., 1., 1., 1.) *10.0;
                 float NdotL         = max(dot(normal, L), 0.0);
                 float NdotV         = dot(normal, viewDir);
+                float3 VRefN        = reflect(viewDir, normal);
+                float3 VRefNCamSpace = mul(UNITY_MATRIX_V, VRefN);
                 // Fresnel factor
                 float3 F0        = float3(0.02, 0.02, 0.02);                        // value of F0 for water
       
@@ -228,23 +246,33 @@
                
                 // Add the planar refelection
                 float2  refCamUV = i.refCamPos.xy / i.refCamPos.w;
-                float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x, normalInRefSpace.y * _aspect_ration_multiplier)*0.2, -0.02, 0.02), 0., 0.));
+                float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x* _aspect_ration_multiplier, normalInRefSpace.y )*0.2, -0.02, 0.02), 0., 0.));
                 
                 kS = fresnelSchlickRoughness(max(NdotV, 0.0), F0, _roughness);
+        
 
-                float displacmentStrenght = abs(normal.x) + abs(normal.z) + 1. - normal.y;
-                      displacmentStrenght = smoothstep(0.5, 0.6, displacmentStrenght);
-
-
-
-                //kS = min(kS, lerp(1., 0.5, displacmentStrenght));
                 float2 screenPosition = (i.screenPos.xy / i.screenPos.w);
+                float refractionDepthOriginal = tex2D(_CameraDepth_Texture, screenPosition);
 
-                float3 SSR = tex2D(_Refraction_texture, screenPosition + viewDir.xy*0.025 * float2(1., _aspect_ration_multiplier));
-           
-                float3 reflection = lerp(refCamCol.xyz, SSR, (1. - normal.y));
-                float3 refraction = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy * -0.012 * float2(1., _aspect_ration_multiplier));
-                float3 col = kS * reflection + (1.-kS)*refraction + specularDirLight;
+
+                float2 cornerFix = 1. -(smoothstep(0.05, 0., screenPosition * float2(_aspect_ration_multiplier, 1.))
+                    + smoothstep(float2(1. - 0.05 / _aspect_ration_multiplier, 0.95), float2(1., 1.), screenPosition));
+
+
+                float3 SSROffsetdDepth = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy*0.025 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
+                float3 SSR = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy*0.025 * float2(_aspect_ration_multiplier, 1.) * cornerFix * step(SSROffsetdDepth - 0.00008, refractionDepthOriginal));
+                float correctionFactor = max(dot(VRefN, viewDirRefCam),0.);
+                      correctionFactor = smoothstep(1., 0.5, correctionFactor);
+                float3 reflection = lerp(refCamCol.xyz, SSR * _waterColor, correctionFactor);
+
+
+            
+                float refractionDepthOffset   = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy *-0.025 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
+                float fixOffsetError          = step(refractionDepthOffset - 0.00008, refractionDepthOriginal);
+                float3 refraction      = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy *- 0.025 * float2(_aspect_ration_multiplier, 1.) * (cornerFix) * fixOffsetError);
+ 
+
+                float3 col = kS * reflection + (1.-kS)  *refraction* /** NdotL **/_waterColor + specularDirLight;
 
 
                 return float4(col.xyz, 1.);

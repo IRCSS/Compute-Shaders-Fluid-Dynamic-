@@ -33,6 +33,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     private Camera            reflection_cam;
     private RenderTexture     reflection_cam_texture;
     private RenderTexture     refraction_cam_texture;
+    private RenderTexture     camera_depth_texture;
 
     private CommandBuffer     render_water_cb;
 
@@ -43,7 +44,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         main_cam = Camera.main;
         if (main_cam == null) Debug.LogError("Could not find main camera, make sure the camera is tagged as main");
-
+        main_cam.depthTextureMode = DepthTextureMode.Depth;
 
         // Set up the refelection camera
         GameObject refCamGB = new GameObject("RefelectionCamera");
@@ -56,12 +57,18 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         refraction_cam_texture = new RenderTexture(reflection_cam_texture.descriptor);
         refraction_cam_texture.Create();
 
+        camera_depth_texture = new RenderTexture(reflection_cam_texture.descriptor)
+        {
+            format = RenderTextureFormat.R16
+        };
+        camera_depth_texture.Create();
 
         reflection_cam.targetTexture = reflection_cam_texture;
 
         Shader.SetGlobalTexture("_Refelection_texture", reflection_cam_texture);
-        Shader.SetGlobalTexture("_Refraction_texture", refraction_cam_texture);
-        Shader.SetGlobalVector ("_refCamScreenParm", new Vector2(main_cam.pixelWidth, main_cam.pixelHeight));
+        Shader.SetGlobalTexture("_Refraction_texture",  refraction_cam_texture);
+        Shader.SetGlobalVector ("_refCamScreenParm",    new Vector2(main_cam.pixelWidth, main_cam.pixelHeight));
+        Shader.SetGlobalTexture("_CameraDepth_Texture", camera_depth_texture);
 
         //--
 
@@ -150,8 +157,11 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         // Copy the content of the frame buffer into a texture to be sampled for refraction
 
 
-        render_water_cb.Blit(BuiltinRenderTextureType.CameraTarget, refraction_cam_texture);
+        render_water_cb.Blit(BuiltinRenderTextureType.CameraTarget,  refraction_cam_texture);
+        render_water_cb.Blit(BuiltinRenderTextureType.Depth, camera_depth_texture  );
         render_water_cb.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+
+       
 
         render_water_cb.DrawRenderer(fountainRender, fountainMat);
 
@@ -180,6 +190,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         Shader.SetGlobalVector("_fountain_downLeft",   Tran_downLeft.position);
         Shader.SetGlobalVector("_fountain_upRight",    Tran_upRight.position  );
         Shader.SetGlobalVector("_main_camera_forward", main_cam.transform.forward);
+        
         // Update ref cam
 
 
@@ -212,7 +223,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
 
         Shader.SetGlobalMatrix("_ref_cam_tranform", GL.GetGPUProjectionMatrix(reflection_cam.projectionMatrix, true) * reflection_cam.worldToCameraMatrix);
-
+        Shader.SetGlobalVector("_ref_cam_position", reflection_cam.transform.position);
     }
 
     // ------------------------------------------------------------------
