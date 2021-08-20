@@ -267,9 +267,9 @@
 
 
             
-                float refractionDepthOffset   = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy *-0.025 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
+                float refractionDepthOffset   = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy *-0.015 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
                 float fixOffsetError          = step(refractionDepthOffset - 0.00008, refractionDepthOriginal);
-                float3 refraction      = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy *- 0.025 * float2(_aspect_ration_multiplier, 1.) * (cornerFix) * fixOffsetError);
+                float3 refraction      = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy *- 0.015 * float2(_aspect_ration_multiplier, 1.) * (cornerFix) * fixOffsetError);
  
 
                 float3 col = kS * reflection + (1.-kS)  *refraction* /** NdotL **/_waterColor + specularDirLight;

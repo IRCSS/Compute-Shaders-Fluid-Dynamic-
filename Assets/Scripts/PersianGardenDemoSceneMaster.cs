@@ -20,7 +20,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     public GameObject Fountain;
     public GameObject FountainPlain;
     public Texture2D  boundaryTexture;
-    
+    public Material   fountainGroundMat;
 
     //___________
     // private
@@ -190,8 +190,11 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         Shader.SetGlobalVector("_fountain_downLeft",   Tran_downLeft.position);
         Shader.SetGlobalVector("_fountain_upRight",    Tran_upRight.position  );
         Shader.SetGlobalVector("_main_camera_forward", main_cam.transform.forward);
+
         
+
         // Update ref cam
+
 
 
 

@@ -12,6 +12,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: fountainGround
+    second: {fileID: 2100000, guid: f61ea48ae5dda694789f0c23b16752bb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: groundMat
     second: {fileID: 2100000, guid: 3af5ccbf9dcce204bba2b75df49457ec, type: 2}
   materials:
