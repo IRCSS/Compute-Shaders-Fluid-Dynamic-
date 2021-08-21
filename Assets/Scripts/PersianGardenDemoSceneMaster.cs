@@ -107,7 +107,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         fluid_simulater.AddUserForce           (resources.velocity_buffer                                   );
         fluid_simulater.AddConstantForceSource (resources.velocity_buffer, waterpipePosition,
-                                                waterPipeDirection, 0.4f, fluid_simulater.simulation_dimension* 0.0025f, fluid_simulater.simulation_dimension*0.001f);
+                                                waterPipeDirection, 1.4f, fluid_simulater.simulation_dimension* 0.0025f, fluid_simulater.simulation_dimension*0.001f);
 
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
         fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );

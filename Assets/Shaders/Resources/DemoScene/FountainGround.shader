@@ -86,6 +86,7 @@
             {
                 float4 vertex : POSITION;
                 float2 uv     : TEXCOORD0;
+                float3 normal : NORMAL;
             };
 
             struct v2f
@@ -93,6 +94,7 @@
                 float2 uv       : TEXCOORD0;
                 float2 uvFlu    : TEXCOORD1;
                 float4 worldPos : TEXCOORD2;
+                float3 normal   : TEXCOORD3;
                 float4 vertex   : SV_POSITION;
             };
 
@@ -113,6 +115,7 @@
                        uv  = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
 
                 o.uvFlu  = float2(uv.x, uv.y);
+                o.normal = UnityObjectToWorldNormal(v.normal);
                 return o;
             }
 
@@ -129,7 +132,7 @@
 
              
                 float presureCenter = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uvFlu, 0., 0.)).x);
-                col += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0. );
+                col += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0. ) * max(0., dot(i.normal, -_lightDirection)) * 1.6;
                 col = lerp(col, col * float4(0.65,0.65,0.75, 1.), smoothstep(0.45, 1.0, abs(presureCenter)));
 
                 return col;

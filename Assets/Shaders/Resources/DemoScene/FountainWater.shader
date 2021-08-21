@@ -220,7 +220,7 @@
                 float3 halfVec = normalize(L + viewDir);
                 // The concept behind lighting the water is to sum up the refracted and refelected components of the light. The refracted is the screen texture behind the water plane, and the reflected is the palanr refelection camera texture + specular highlights of the directional light
 
-                float LightRadiance = float4(1., 1., 1., 1.) *10.0;
+                float4 LightRadiance = float4(1., 1., 1., 1.) *10.0;
                 float NdotL         = max(dot(normal, L), 0.0);
                 float NdotV         = dot(normal, viewDir);
                 float3 VRefN        = reflect(viewDir, normal);
@@ -248,7 +248,7 @@
                 float2  refCamUV = i.refCamPos.xy / i.refCamPos.w;
                 float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x* _aspect_ration_multiplier, normalInRefSpace.y )*0.2, -0.02, 0.02), 0., 0.));
                 
-                kS = fresnelSchlickRoughness(max(NdotV, 0.0), F0, _roughness);
+                kS += saturate(fresnelSchlickRoughness(max(NdotV, 0.0), F0, _roughness));
         
 
                 float2 screenPosition = (i.screenPos.xy / i.screenPos.w);
@@ -259,8 +259,8 @@
                     + smoothstep(float2(1. - 0.05 / _aspect_ration_multiplier, 0.95), float2(1., 1.), screenPosition));
 
 
-                float3 SSROffsetdDepth = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy*0.025 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
-                float3 SSR = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy*0.025 * float2(_aspect_ration_multiplier, 1.) * cornerFix * step(SSROffsetdDepth - 0.00008, refractionDepthOriginal));
+                float3 SSROffsetdDepth = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy*0.015 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
+                float3 SSR = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy*0.015 * float2(_aspect_ration_multiplier, 1.) * cornerFix * step(SSROffsetdDepth - 0.00008, refractionDepthOriginal));
                 float correctionFactor = max(dot(VRefN, viewDirRefCam),0.);
                       correctionFactor = smoothstep(1., 0.5, correctionFactor);
                 float3 reflection = lerp(refCamCol.xyz, SSR * _waterColor, correctionFactor);
