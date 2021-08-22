@@ -72,7 +72,11 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         Shader.SetGlobalVector ("_refCamScreenParm",    new Vector2(main_cam.pixelWidth, main_cam.pixelHeight));
         Shader.SetGlobalTexture("_CameraDepth_Texture", camera_depth_texture);
         Shader.SetGlobalVector ("_pointOnWaterPlane",   FountainPlain.transform.position);
+        
+        Vector4[] b = GenerateRefelectionLightDirectionForFountain();
+        
 
+        Shader.SetGlobalMatrix("_BounceCausticsLightDirection",new Matrix4x4(b[0], b[1], b[2], b[3]));
         //--
 
         fluid_simulater.Initialize();
@@ -298,4 +302,37 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         return new Vector2(-20.0f, -20.0f);
     }
+
+
+
+
+
+
+
+    // Coding scheme is:    x > 1.5    x < -1.5   z > 1.5   z < - 1.5
+    //                      Case 1     Case 2     Case 3    Case 4
+
+    //           Case 3 
+    //        ------------
+    //        |          | 
+    // Case 2 |          | Case 1
+    //        |          | 
+    //        |          | 
+    //        ------------
+    //           Case 4
+
+    Vector4[] GenerateRefelectionLightDirectionForFountain()
+    {
+
+        Vector4[] toReturn = new Vector4[4];
+
+        toReturn[0] = Quaternion.Euler(0.0f, 90.0f, 0.0f) * mainDirectionLight.forward;
+        toReturn[1] = Quaternion.Euler(0.0f,-90.0f, 0.0f) * mainDirectionLight.forward;
+        toReturn[2] = mainDirectionLight.forward;
+        toReturn[3] = new Vector3(mainDirectionLight.forward.x , mainDirectionLight.forward.y, -mainDirectionLight.forward.z);
+        return toReturn;
+        
+    }
+
+
 }

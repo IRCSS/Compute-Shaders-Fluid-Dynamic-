@@ -23,7 +23,7 @@
 
             float4x4  _WorldToLightCam;
 
-            sampler2D  _MainTex;
+            sampler2D  _MainTex; 
             sampler2D  _fountain_pressure_buffer;
             sampler2D _LightDepthTexture;
             float4     _MainTex_ST;
@@ -37,6 +37,8 @@
             float     _DisplacementDistribution;
             float2    _canvas_texel_size;
             
+            float4x4   _BounceCausticsLightDirection;
+
             float4 vectorPlaneIntersection(float4 planeNormal, float4 PlaneCenter, float4 vectorDirection, float4 vectorOrigin)
             {
                    float t = (dot(planeNormal, PlaneCenter) - dot(planeNormal, vectorOrigin)) / dot(planeNormal, vectorDirection);
@@ -112,6 +114,7 @@
             {
                 float2 uv       : TEXCOORD0;
                 float2 uvFlu    : TEXCOORD1;
+                float2 uvFlu2   : TEXCOORD5;   // For caustics above the water
                 float4 worldPos : TEXCOORD2;
                 float3 normal   : TEXCOORD3;
                 float4 lightPos : TEXCOORD4;
@@ -119,7 +122,10 @@
 
             };
 
-
+            float4 GetColumn(int index)
+            {
+                return float4(_BounceCausticsLightDirection[0][index], _BounceCausticsLightDirection[1][index], _BounceCausticsLightDirection[2][index], _BounceCausticsLightDirection[3][index]);
+            }
 
             v2f vert (appdata v)
             {
@@ -139,6 +145,27 @@
                        uv  = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
 
                 o.uvFlu  = float2(uv.x, uv.y);
+
+                float4 c;
+                c[0] = o.worldPos.x >  1.5 ? 1.0 : 0.0;
+                c[1] = o.worldPos.x < -1.5 ? 1.0 : 0.0;
+                c[2] = o.worldPos.z >  1.5 ? 1.0 : 0.0;
+                c[3] = o.worldPos.z < -1.5 ? 1.0 : 0.0;
+
+
+                float sum = dot(c, float4(1., 1., 1., 1.));
+                float4 aboveWaterLightDir = (GetColumn(0) * c[0] + GetColumn(1) * c[1] + GetColumn(2) * c[2] + GetColumn(3) * c[3]) / max(0.0001, sum);
+
+
+                aboveWaterLightDir = lerp(float4(1., 1., 0., 0.), aboveWaterLightDir, min(1., sum));
+
+                float4 aboveWaterhitPos = vectorPlaneIntersection(float4(0., 1., 0., 0.), _pointOnWaterPlane, -normalize(aboveWaterLightDir), o.worldPos);
+
+                    uv = (aboveWaterhitPos.zx - _fountain_downLeft.zx);
+                    uv = uv / abs(_fountain_upRight.zx - _fountain_downLeft.zx);
+
+                    o.uvFlu2 = uv.xy;
+
                 o.normal = UnityObjectToWorldNormal(v.normal);
                 return o;
             }
@@ -150,13 +177,28 @@
             
                 float planeMask = 1.-step(_pointOnWaterPlane.y, i.worldPos.y);
                
-                float3 pressureBufInfo  = filterNormal(i.uvFlu, _canvas_texel_size);
-                float3 pressureBufInfoB = filterNormal(i.uvFlu + float2(1.0, 0.0)*  _canvas_texel_size * 5. * planeMask, _canvas_texel_size);
-                float3 pressureBufInfoG = filterNormal(i.uvFlu + float2(0.,  1.0)* -_canvas_texel_size * 5. * planeMask, _canvas_texel_size);
+                float4 c;
+                c[0] = i.worldPos.x >  1.5 ? 1.0 : 0.0;
+                c[1] = i.worldPos.x < -1.5 ? 1.0 : 0.0;
+                c[2] = i.worldPos.z >  1.5 ? 1.0 : 0.0;
+                c[3] = i.worldPos.z < -1.5 ? 1.0 : 0.0;
+
+                float sum = dot(c, float4(1., 1., 1., 1.));
+                float4 aboveWaterLightDir = (GetColumn(0) * c[0] + GetColumn(1) * c[1] + GetColumn(2) * c[2] + GetColumn(3) * c[3]) / max(0.0001, sum);
+
+                float4 lightDirection = lerp(-aboveWaterLightDir, _lightDirection, planeMask);
+                
+                float2 uv = lerp(i.uvFlu2, i.uvFlu, planeMask);
+
+                float3 pressureBufInfo  = filterNormal(uv, _canvas_texel_size);
+                float3 pressureBufInfoB = filterNormal(uv + float2(1.0, 0.0)*  _canvas_texel_size * 5. * max(0.2,planeMask), _canvas_texel_size);
+                float3 pressureBufInfoG = filterNormal(uv + float2(0.,  1.0)* -_canvas_texel_size * 5. * max(0.2,planeMask), _canvas_texel_size);
 
              
-                float presureCenter = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uvFlu, 0., 0.)).x);
-                col += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0. ) * max(0., dot(i.normal, -_lightDirection)) * 1.6;
+                float causticStrength = lerp(1.6, 0., smoothstep(_pointOnWaterPlane.y, _pointOnWaterPlane.y + 0.25, i.worldPos.y));
+
+                float presureCenter = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(uv, 0., 0.)).x);
+                col += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0. )  * max(0., dot(i.normal, -lightDirection)) * causticStrength;
                 col = lerp(col, col * float4(0.65,0.65,0.75, 1.), smoothstep(0.45, 1.0, abs(presureCenter)));
 
                 // fishShadow
@@ -166,12 +208,12 @@
 
                 float fishShadow = FishSoftShadow(lighCoord.xy, lighCoord.z);
 
-                col = lerp(col *0.6, col, fishShadow);
+                col.xyz = lerp(col.xyz *float3(.55, 0.58, 0.64), col.xyz, fishShadow);
 
 
                 return col;
             }
-            ENDCG
+            ENDCG 
         }
     }
 }

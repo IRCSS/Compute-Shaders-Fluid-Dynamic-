@@ -39,7 +39,6 @@
                 float4 tangent   : TEXCOORD2;
                 float4 worldPos  : TEXCOORD3;
                 float2 uvFlu     : TEXCOORD4;
-                float4 lightPos  : TEXCOORD5;
                 
             };
 
