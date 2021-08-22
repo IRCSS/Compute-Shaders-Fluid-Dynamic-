@@ -21,9 +21,11 @@
 
             #include "UnityCG.cginc"
 
-            
+            float4x4  _WorldToLightCam;
+
             sampler2D  _MainTex;
             sampler2D  _fountain_pressure_buffer;
+            sampler2D _LightDepthTexture;
             float4     _MainTex_ST;
 
             float4    _fountain_downLeft;
@@ -95,7 +97,9 @@
                 float2 uvFlu    : TEXCOORD1;
                 float4 worldPos : TEXCOORD2;
                 float3 normal   : TEXCOORD3;
+                float4 lightPos : TEXCOORD4;
                 float4 vertex   : SV_POSITION;
+
             };
 
 
@@ -107,6 +111,9 @@
                 o.uv       = TRANSFORM_TEX(v.uv, _MainTex);
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 
+
+
+                o.lightPos = mul(_WorldToLightCam, float4(o.worldPos.xyz, 1.));
 
                float4 hitPosOnWater = vectorPlaneIntersection(float4(0., 1., 0., 0.), _pointOnWaterPlane, -_lightDirection, o.worldPos);
 
@@ -134,6 +141,17 @@
                 float presureCenter = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uvFlu, 0., 0.)).x);
                 col += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0. ) * max(0., dot(i.normal, -_lightDirection)) * 1.6;
                 col = lerp(col, col * float4(0.65,0.65,0.75, 1.), smoothstep(0.45, 1.0, abs(presureCenter)));
+
+                // fishShadow
+                float3 lighCoord = i.lightPos.xyz / i.lightPos.w;
+                lighCoord.xy = lighCoord.xy * 0.5 + 0.5;
+                lighCoord.y = 1.0 - lighCoord.y;
+
+                float fishDepth = tex2D(_LightDepthTexture, lighCoord.xy);
+
+
+                col = lerp(col *0.6, col, step(fishDepth, lighCoord.z));
+
 
                 return col;
             }

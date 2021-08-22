@@ -39,12 +39,16 @@
                 float4 tangent   : TEXCOORD2;
                 float4 worldPos  : TEXCOORD3;
                 float2 uvFlu     : TEXCOORD4;
+                float4 lightPos  : TEXCOORD5;
                 
             };
+
+
 
             sampler2D _MainTex;
             sampler2D _normalMap;
             sampler2D  _fountain_pressure_buffer;
+
             float4    _MainTex_ST;
             float     _roughness;
             float3    _lightDirection;
@@ -85,6 +89,7 @@
                 o.normal   = UnityObjectToWorldNormal(v.normal);
                 o.tangent  = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
                 o.worldPos = mul(unity_ObjectToWorld, float4(localPos,1.));
+
 
                 float3 hitPosOnWater = vectorPlaneIntersection(float3(0., 1., 0.), _pointOnWaterPlane, -_lightDirection, o.worldPos);
 
@@ -253,15 +258,17 @@
                        finalCol.xyz += (float3(0.7,0.7,0.7) + float3(0., 0.05,0.2) * pointingDown)*albedo;  // ambient Lighting
 
 
-                       // Caustics
+                // Caustics
 
-                       float3 pressureBufInfo  = filterNormal(i.uvFlu, _canvas_texel_size);
-                       float3 pressureBufInfoB = filterNormal(i.uvFlu + float2(1.0, 0.0)*  _canvas_texel_size * 5. , _canvas_texel_size);
-                       float3 pressureBufInfoG = filterNormal(i.uvFlu + float2(0., 1.0) * -_canvas_texel_size * 5.  , _canvas_texel_size);
-                       float  presureCenter    = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uvFlu, 0., 0.)).x);
+                float3 pressureBufInfo  = filterNormal(i.uvFlu, _canvas_texel_size);
+                float3 pressureBufInfoB = filterNormal(i.uvFlu + float2(1.0, 0.0)*  _canvas_texel_size * 5. , _canvas_texel_size);
+                float3 pressureBufInfoG = filterNormal(i.uvFlu + float2(0., 1.0) * -_canvas_texel_size * 5.  , _canvas_texel_size);
+                float  presureCenter    = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uvFlu, 0., 0.)).x);
 
-                       finalCol += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0.) * max(0., dot(normal, -_lightDirection)) * 12.;
-                       finalCol = lerp(finalCol, finalCol * float4(0.65, 0.65, 0.75, 1.), smoothstep(0.45, 1.0, abs(presureCenter)));
+                finalCol += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0.) * max(0., dot(normal, -_lightDirection)) * 12.;
+                finalCol = lerp(finalCol, finalCol * float4(0.65, 0.65, 0.75, 1.), smoothstep(0.45, 1.0, abs(presureCenter)));
+
+
 
                 return finalCol;
             }

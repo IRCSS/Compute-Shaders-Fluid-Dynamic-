@@ -9,7 +9,7 @@ public class Fish : MonoBehaviour
     float current;
 
     Material mat;
-
+    Material shadow_depth_mat;
     float period;
     float materialTime = 0;
 
@@ -39,7 +39,22 @@ public class Fish : MonoBehaviour
          
     }
 
+    public Renderer GetRenderer()
+    {
+        Renderer r = transform.GetChild(0).GetComponent<Renderer>();
 
+        if (!r) Debug.LogError("couldnt find a renderer");
+        return r;
+    }
+
+    public Material GetFishDepthMat()
+    {
+        if (!shadow_depth_mat) shadow_depth_mat = new Material(Shader.Find("Unlit/FishShadowDepthShader"));
+
+        if (!shadow_depth_mat) Debug.LogError("couldnt construct a material for drawing the depth of the fish to the light depth map");
+
+        return shadow_depth_mat;
+    }
     float smoothstep(float a, float b, float x)
     {
         float t = Mathf.Clamp01((x - a) / (b - a));
@@ -76,7 +91,7 @@ public class Fish : MonoBehaviour
 
         
 
-            Vector3 perlinCoordinate = new Vector3(this.transform.position.x*2.0f, this.transform.position.z*2.0f, Time.time*0.15f  + seed);
+        Vector3 perlinCoordinate = new Vector3(this.transform.position.x*2.0f, this.transform.position.z*2.0f, Time.time*0.15f  + seed);
         
         Vector3 forceD = new Vector3(Perlin.Fbm(perlinCoordinate, 5), 0, Perlin.Fbm(perlinCoordinate + new Vector3(5.0f, 10.0f, 20.0f), 5));
 
@@ -109,14 +124,21 @@ public class Fish : MonoBehaviour
 
         //materialTime = materialTime % 10000.0f;
 
-        mat.SetFloat("_FishTime", materialTime);
+        mat.SetFloat("_FishTime",      materialTime);
         mat.SetFloat("_movementSpeed", movementSpeed);
+
+        shadow_depth_mat.SetFloat("_FishTime",      materialTime);
+        shadow_depth_mat.SetFloat("_movementSpeed", movementSpeed);
+
+        
+
 
     }
 
     private void OnDestroy()
     {
         Destroy(mat);
+        Destroy(shadow_depth_mat);
     }
 
 

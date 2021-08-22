@@ -20,7 +20,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     public GameObject Fountain;
     public GameObject FountainPlain;
     public Texture2D  boundaryTexture;
-    public Material   fountainGroundMat;
+    public Camera     LightCamera;
 
     //___________
     // private
@@ -34,8 +34,10 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     private RenderTexture     reflection_cam_texture;
     private RenderTexture     refraction_cam_texture;
     private RenderTexture     camera_depth_texture;
+    private RenderTexture     fish_shadow_depth_texture;
 
     private CommandBuffer     render_water_cb;
+    private CommandBuffer     fish_shadow_cb;
 
     // ------------------------------------------------------------------
     // INITALISATION
@@ -170,6 +172,45 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         main_cam.AddCommandBuffer(CameraEvent.BeforeForwardAlpha, render_water_cb);
 
 
+        // --------------------- Fish shadowMap
+
+
+        Matrix4x4 worldToLightCamMaterix = GL.GetGPUProjectionMatrix(LightCamera.projectionMatrix, true) * LightCamera.worldToCameraMatrix;
+
+        Shader.SetGlobalMatrix("_WorldToLightCam", worldToLightCamMaterix);
+
+        fish_shadow_cb = new CommandBuffer()
+        {
+            name = "fishShadowMap"
+        };
+
+        fish_shadow_depth_texture = new RenderTexture(2048, 2048, 16)
+        {
+            format = RenderTextureFormat.RFloat
+        };
+
+        fish_shadow_depth_texture.Create();
+
+        Shader.SetGlobalTexture("_LightDepthTexture", fish_shadow_depth_texture);
+
+        fish_shadow_cb.SetRenderTarget(fish_shadow_depth_texture);
+        fish_shadow_cb.ClearRenderTarget(true, true, Color.black);
+
+        Fish[] allFish = GameObject.FindObjectsOfType<Fish>();
+        if (allFish.Length <= 0) Debug.LogWarning("couldnt find fish in the scene, this pond is supposed to have fish");
+
+
+
+
+        foreach (Fish f in allFish)
+        {
+            Renderer r = f.GetRenderer();
+            fish_shadow_cb.DrawRenderer(r, f.GetFishDepthMat());
+        }
+
+        fish_shadow_cb.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);
+
+        main_cam.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, fish_shadow_cb);
 
     }
 
