@@ -43,6 +43,23 @@
                    return vectorOrigin + vectorDirection * t;
             }
 
+            float FishSoftShadow(float2 uv, float currentDepth)
+            {
+                float4 s;
+
+                float displacement = 0.0006;
+
+                s[0] = tex2D(_LightDepthTexture, uv + float2( 0., -1.) * displacement);
+                s[1] = tex2D(_LightDepthTexture, uv + float2( 0.,  1.) * displacement);
+                s[2] = tex2D(_LightDepthTexture, uv + float2( 1.,  0.) * displacement);
+                s[3] = tex2D(_LightDepthTexture, uv + float2(-1.,  0.) * displacement);
+
+                s = step(s, currentDepth.xxxx);
+
+                return dot(s, float4(0.25, 0.25, 0.25, 0.25));
+
+            }
+
             float pressureToneMapping(float pressure)
             {
 
@@ -147,10 +164,9 @@
                 lighCoord.xy = lighCoord.xy * 0.5 + 0.5;
                 lighCoord.y = 1.0 - lighCoord.y;
 
-                float fishDepth = tex2D(_LightDepthTexture, lighCoord.xy);
+                float fishShadow = FishSoftShadow(lighCoord.xy, lighCoord.z);
 
-
-                col = lerp(col *0.6, col, step(fishDepth, lighCoord.z));
+                col = lerp(col *0.6, col, fishShadow);
 
 
                 return col;

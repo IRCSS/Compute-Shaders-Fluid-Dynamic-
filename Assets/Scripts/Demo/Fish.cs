@@ -24,8 +24,9 @@ public class Fish : MonoBehaviour
         seed = Random.value * 1000;
         rg = GetComponent<Rigidbody>();
 
+        materialTime = Random.Range(0.0f, 50.0f);
 
-        if(!rg) Debug.LogError("Couldnt find a rigid body on fish object");
+        if (!rg) Debug.LogError("Couldnt find a rigid body on fish object");
         Renderer r = transform.GetChild(0).GetComponent<Renderer>();
 
         if (!r) Debug.LogError("couldnt find a renderer");
@@ -122,7 +123,7 @@ public class Fish : MonoBehaviour
         float movementSpeed = Mathf.Clamp01((rg.velocity.magnitude * 5.0f + rg.angularVelocity.magnitude) / 5.0f);
         materialTime += Mathf.Lerp(0.0f, 0.4f, movementSpeed);
 
-        //materialTime = materialTime % 10000.0f;
+        materialTime = materialTime % 10000.0f;
 
         mat.SetFloat("_FishTime",      materialTime);
         mat.SetFloat("_movementSpeed", movementSpeed);
