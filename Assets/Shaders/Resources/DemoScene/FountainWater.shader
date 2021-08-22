@@ -214,6 +214,8 @@
                 float3 normalInRefSpace = mul(_ref_cam_tranform, float4(normal.xyz - float3(0.,1.,0.), 0.));    // This is used to offset the texture read of the planar camera. Based on how much the normal deviates from the standard plane normal
                 float3 normalInCamSpace = mul(UNITY_MATRIX_V, normal);
 
+                float3 roughness = _roughness;
+
                 float3 L       = -_lightDirection;
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
                 float3 viewDirRefCam = normalize(_ref_cam_position.xyz - i.worldPos.xyz);
@@ -230,8 +232,8 @@
       
                 float3 F  = fresnelSchlick(max(dot(halfVec, viewDir), 0.0), F0);  // Fresnel factor
 
-                float NDF = DistributionGGX(normal, halfVec, _roughness);
-                float G   = GeometrySmith  (normal, viewDir, L, _roughness);
+                float NDF = DistributionGGX(normal, halfVec, roughness);
+                float G   = GeometrySmith  (normal, viewDir, L, roughness);
 
                 float3 kS = F;
                 float3 kD = float3(1.,1.,1.) - kS;
@@ -248,7 +250,7 @@
                 float2  refCamUV = i.refCamPos.xy / i.refCamPos.w;
                 float4  refCamCol = tex2Dlod(_Refelection_texture, float4(refCamUV.xy + clamp(float2(normalInRefSpace.x* _aspect_ration_multiplier, normalInRefSpace.y )*0.2, -0.02, 0.02), 0., 0.));
                 
-                kS += saturate(fresnelSchlickRoughness(max(NdotV, 0.0), F0, _roughness));
+                kS += saturate(fresnelSchlickRoughness(max(NdotV, 0.0), F0, roughness));
         
 
                 float2 screenPosition = (i.screenPos.xy / i.screenPos.w);

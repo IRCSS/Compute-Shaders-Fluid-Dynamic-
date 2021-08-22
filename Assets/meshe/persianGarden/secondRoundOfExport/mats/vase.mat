@@ -59,10 +59,13 @@ Material:
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
+    - _DisplacementDistribution: 0.4
+    - _DisplacementStrength: 4
     - _DstBlend: 0
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _MaxDisplacement: 100
     - _Metallic: 0
     - _Mode: 0
     - _OcclusionStrength: 1
