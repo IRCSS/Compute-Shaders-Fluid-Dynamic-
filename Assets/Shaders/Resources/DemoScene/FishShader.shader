@@ -73,17 +73,20 @@
                 v2f o;
 
                 float3 localPos = v.vertex;
-                localPos.x += sin(localPos.z*10. + _FishTime)*0.4  * _movementSpeed* smoothstep(-0.1, 0.5, localPos.z);
+                localPos.x += sin(localPos.z*10. + _FishTime)*0.35  * _movementSpeed* smoothstep(-0.1, 0.5, localPos.z);
                 localPos.x += sin(localPos.z*8. + _FishTime*0.8 + 2.612)*0.3  * _movementSpeed * smoothstep(-0.08, 0.5, localPos.z);
                 
+                float twist_angle = cos(_FishTime + localPos.z*10) * 3.6 * _movementSpeed * smoothstep(-0.1, 0.5, localPos.z);
+                float2x2 twist_matrix = float2x2(float2(cos(twist_angle), -sin(twist_angle)), float2(sin(twist_angle), cos(twist_angle)));
+                localPos.xy = mul(twist_matrix, localPos.xy);
 
                 o.vertex   = UnityObjectToClipPos(localPos);
                 o.uv       = TRANSFORM_TEX(v.uv, _MainTex);
                 o.normal   = UnityObjectToWorldNormal(v.normal);
                 o.tangent  = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
-                o.worldPos = mul(unity_ObjectToWorld, localPos);
+                o.worldPos = mul(unity_ObjectToWorld, float4(localPos,1.));
 
-                float3 hitPosOnWater = vectorPlaneIntersection(float4(0., 1., 0., 0.), _pointOnWaterPlane, -_lightDirection, o.worldPos);
+                float3 hitPosOnWater = vectorPlaneIntersection(float3(0., 1., 0.), _pointOnWaterPlane, -_lightDirection, o.worldPos);
 
 
                 float2 uv = (hitPosOnWater.zx - _fountain_downLeft.zx);
@@ -257,7 +260,7 @@
                        float3 pressureBufInfoG = filterNormal(i.uvFlu + float2(0., 1.0) * -_canvas_texel_size * 5.  , _canvas_texel_size);
                        float  presureCenter    = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uvFlu, 0., 0.)).x);
 
-                       finalCol += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0.) * max(0., dot(i.normal, -_lightDirection)) * 1.6;
+                       finalCol += float4(pressureBufInfo.x, pressureBufInfoB.x, pressureBufInfoG.x, 0.) * max(0., dot(normal, -_lightDirection)) * 12.;
                        finalCol = lerp(finalCol, finalCol * float4(0.65, 0.65, 0.75, 1.), smoothstep(0.45, 1.0, abs(presureCenter)));
 
                 return finalCol;

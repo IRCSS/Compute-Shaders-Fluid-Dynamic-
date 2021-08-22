@@ -13,6 +13,11 @@ public class Fish : MonoBehaviour
     float period;
     float materialTime = 0;
 
+    Camera main_cam;
+
+
+    PersianGardenDemoSceneMaster ref_demoMaster;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -27,7 +32,13 @@ public class Fish : MonoBehaviour
 
         mat = r.material;
         period = Random.Range(1.0f, 5.0f);
+
+        main_cam = Camera.main;
+
+        ref_demoMaster = FindObjectOfType<PersianGardenDemoSceneMaster>();
+         
     }
+
 
     float smoothstep(float a, float b, float x)
     {
@@ -40,7 +51,32 @@ public class Fish : MonoBehaviour
     void Update()
     {
 
-        Vector3 perlinCoordinate = new Vector3(this.transform.position.x*2.0f, this.transform.position.z*2.0f, Time.time*0.15f  + seed);
+
+        RaycastHit results;
+        Ray ray = main_cam.ScreenPointToRay(Input.mousePosition);
+
+        float shouldFlee = 0.0f;
+
+        Vector3 fleeDirection = Vector3.zero;
+
+        if (Physics.Raycast(ray, out results, 100.0f))
+        {
+
+            fleeDirection = this.transform.position - results.point;
+            fleeDirection.y = 0.0f;
+            float distanceToHand = fleeDirection.magnitude;
+
+
+
+            shouldFlee = smoothstep(0.45f, 0.02f, distanceToHand)  *(Input.GetKey(ref_demoMaster.fluid_simulater.ApplyForceKey) ? 1.0f : 0.0f);
+
+
+
+        }
+
+        
+
+            Vector3 perlinCoordinate = new Vector3(this.transform.position.x*2.0f, this.transform.position.z*2.0f, Time.time*0.15f  + seed);
         
         Vector3 forceD = new Vector3(Perlin.Fbm(perlinCoordinate, 5), 0, Perlin.Fbm(perlinCoordinate + new Vector3(5.0f, 10.0f, 20.0f), 5));
 
@@ -50,6 +86,8 @@ public class Fish : MonoBehaviour
         Vector3 round = Vector3.Cross(disToCenter, Vector3.up);
 
         forceD =Vector3.Lerp(forceD, -disToCenter + round, smoothstep(0.7f, 1.25f,  disToCenter.magnitude)) /* round * disToCenter.magnitude + */  /** disToCenter.magnitude*/;
+
+        forceD += fleeDirection * shouldFlee;
 
         float aligness = Vector3.Dot(forceD, this.transform.forward) * 0.5f + 0.5f;
          
@@ -61,8 +99,8 @@ public class Fish : MonoBehaviour
         float stopper = Mathf.Sin(Time.time * period + seed * 0.006f) + Mathf.Sin(Time.time  + seed * 0.006f+1.521f);
               stopper = smoothstep(-1.0f, 1.0f, stopper);
 
-        if (rg.velocity.magnitude <3.0f)
-        rg.AddForce(forceD.normalized * 1.0f * stopper);
+        if (rg.velocity.magnitude <3.0f + shouldFlee*7.0f)
+        rg.AddForce(forceD.normalized * 1.0f * (stopper + shouldFlee*4.0f));
 
         this.transform.forward = Vector3.Lerp(this.transform.forward, rg.velocity, 0.4f);
 

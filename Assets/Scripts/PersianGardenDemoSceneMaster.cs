@@ -69,6 +69,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         Shader.SetGlobalTexture("_Refraction_texture",  refraction_cam_texture);
         Shader.SetGlobalVector ("_refCamScreenParm",    new Vector2(main_cam.pixelWidth, main_cam.pixelHeight));
         Shader.SetGlobalTexture("_CameraDepth_Texture", camera_depth_texture);
+        Shader.SetGlobalVector ("_pointOnWaterPlane",   FountainPlain.transform.position);
 
         //--
 
