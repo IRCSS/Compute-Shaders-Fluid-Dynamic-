@@ -52,22 +52,16 @@ public class Simple2DFluidSimArbitaryBoundary : MonoBehaviour
 
         fluid_simulater.AddConstantUniformForce(resources.velocity_buffer, new Vector2(0.0f, -1.0f)*0.02f   );
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
-        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
         fluid_simulater.Diffuse                (resources.velocity_buffer                                   );
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
-        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
-        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
+        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer, resources.boundary_velocity_offset_buffer);
         fluid_simulater.Advect                 (resources.velocity_buffer, resources.velocity_buffer, fluid_simulater.velocity_dissapation);
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
-        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
 
-        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
+        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer, resources.boundary_velocity_offset_buffer);
 
 
         fluid_simulater.AddDye                 (resources.dye_buffer                                        );

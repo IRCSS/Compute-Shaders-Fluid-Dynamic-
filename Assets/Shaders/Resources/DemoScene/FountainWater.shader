@@ -9,8 +9,8 @@
         _MaxDisplacement         ("water max Displacemnet", Float) = 5
         _DisplacementDistribution("Displacemnet Distribution", Float) = 0.2
         _roughness  ("water roughness", Float) = 0.1
-        _waterColor ("Color", Color) = (1., 1., 1., 1.)
-        
+        _WaterFogColor ("water fog color", Color) = (1., 1., 1., 1.)
+        _WaterFogDensity ("Water Fog Denisty", Float) = 1
     }
     SubShader
     {
@@ -53,9 +53,12 @@
             sampler2D _Refraction_texture;
             sampler2D _CameraDepth_Texture;
 
+            float3 _WaterFogColor;
+            float  _WaterFogDensity;
+
+
             float4    _fountain_downLeft;
             float4    _fountain_upRight;
-            float4    _waterColor;
             float     _MaxDisplacement;
             float     _DisplacementStrength;
             float     _DisplacementDistribution;
@@ -206,10 +209,14 @@
             {
 
 
+
+                float pixelDepth = UNITY_Z_0_FAR_FROM_CLIPSPACE(i.screenPos.z);
                 // Lighting 
                 
                 float3 normal  = filterNormal(i.uv, _canvas_texel_size);
                        normal  = mul(_fountain2World, float4(normal.xyz, 0.));                                  // Calculate the surface normal. This is the normal of the plane, but modified by the height map displacement
+
+                float centeralPressure = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uv.xy, 0., 0.)).x);
 
                 float3 normalInRefSpace = mul(_ref_cam_tranform, float4(normal.xyz - float3(0.,1.,0.), 0.));    // This is used to offset the texture read of the planar camera. Based on how much the normal deviates from the standard plane normal
                 float3 normalInCamSpace = mul(UNITY_MATRIX_V, normal);
@@ -260,21 +267,34 @@
                 float2 cornerFix = 1. -(smoothstep(0.05, 0., screenPosition * float2(_aspect_ration_multiplier, 1.))
                     + smoothstep(float2(1. - 0.05 / _aspect_ration_multiplier, 0.95), float2(1., 1.), screenPosition));
 
+                float distortationAmount = 1. - abs(normal.y) + abs(centeralPressure);
+
+                float  refractionDepthOffset   = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy *-0.03 * float2(_aspect_ration_multiplier, 1.) * cornerFix* distortationAmount);
+                float  fixOffsetError          = step(refractionDepthOffset - 0.00008, refractionDepthOriginal);
+                float3 refraction              = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy *- 0.03 * float2(_aspect_ration_multiplier, 1.) * (cornerFix) * fixOffsetError * distortationAmount);
+                float  refractionDepth         = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy *-0.0085 * float2(_aspect_ration_multiplier, 1.)*distortationAmount * cornerFix* fixOffsetError));
+
+                float depthDifference = refractionDepth - pixelDepth;
+                float fogFactor = exp2(-_WaterFogDensity * depthDifference);
+
+                float3 diffuseTerm = lerp(_WaterFogColor * NdotL + float3(0.2,0.2,0.3)*_WaterFogColor, refraction, saturate(fogFactor));
 
                 float3 SSROffsetdDepth = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy*0.015 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
-                float3 SSR = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy*0.015 * float2(_aspect_ration_multiplier, 1.) * cornerFix * step(SSROffsetdDepth - 0.00008, refractionDepthOriginal));
+                float3 SSR      = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy*0.015 * float2(_aspect_ration_multiplier, 1.) * cornerFix * step(SSROffsetdDepth - 0.00008, refractionDepthOriginal));
+           
+                
+                float3 SSRTerm = lerp(_WaterFogColor * NdotL + float3(0.2, 0.2, 0.3)*_WaterFogColor, SSR, saturate(fogFactor));
+
                 float correctionFactor = max(dot(VRefN, viewDirRefCam),0.);
                       correctionFactor = smoothstep(1., 0.5, correctionFactor);
-                float3 reflection = lerp(refCamCol.xyz, SSR * _waterColor, correctionFactor);
+
+
+                float3 reflection = lerp(refCamCol.xyz, SSRTerm, correctionFactor);
 
 
             
-                float refractionDepthOffset   = tex2D(_CameraDepth_Texture, screenPosition + normalInCamSpace.xy *-0.015 * float2(_aspect_ration_multiplier, 1.) * cornerFix);
-                float fixOffsetError          = step(refractionDepthOffset - 0.00008, refractionDepthOriginal);
-                float3 refraction      = tex2D(_Refraction_texture, screenPosition + normalInCamSpace.xy *- 0.015 * float2(_aspect_ration_multiplier, 1.) * (cornerFix) * fixOffsetError);
- 
 
-                float3 col = kS * reflection + (1.-kS)  *refraction* /** NdotL **/_waterColor + specularDirLight;
+                float3 col = kS * reflection + (1.-kS)  *diffuseTerm + specularDirLight;
 
 
                 return float4(col.xyz, 1.);

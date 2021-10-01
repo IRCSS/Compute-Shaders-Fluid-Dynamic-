@@ -160,15 +160,16 @@ MonoBehaviour:
       type: 3}
     canvas_dimension: 512
     simulation_dimension: 512
-    solver_iteration_num: 160
+    solver_iteration_num: 120
     grid_scale: 1
     time_step: 1
-    Viscosity: 0.0025
+    Viscosity: 0.02
     force_strength: 1
     force_radius: 10
     force_falloff: 1
     dye_radius: 20
     dye_falloff: 5
+    velocity_dissapation: 0.999
     ApplyDyeKey: 323
     ApplyForceKey: 324
 --- !u!4 &65463035

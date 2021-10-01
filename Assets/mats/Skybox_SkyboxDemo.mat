@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Skybox_SkyboxDemo
+  m_Shader: {fileID: 4800000, guid: acbbd7cf82df40f4299ff6fe1629c62c, type: 3}
+  m_ShaderKeywords: _SUNDISK_HIGH_QUALITY
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Floats:
+    - _AtmosphereThickness: 0.56
+    - _Exposure: 2.34
+    - _SunDisk: 2
+    - _SunSize: 0.028
+    - _SunSizeConvergence: 2.12
+    m_Colors:
+    - _BackColor: {r: 0.16322534, g: 0.20964342, b: 0.26415092, a: 1}
+    - _GroundColor: {r: 0.5, g: 0.491582, b: 0.4787736, a: 1}
+    - _SkyTint: {r: 0.5, g: 0.5, b: 0.5, a: 1}

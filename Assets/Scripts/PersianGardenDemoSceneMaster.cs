@@ -61,7 +61,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         camera_depth_texture = new RenderTexture(reflection_cam_texture.descriptor)
         {
-            format = RenderTextureFormat.R16
+            format = RenderTextureFormat.RFloat
         };
         camera_depth_texture.Create();
 
@@ -116,23 +116,18 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         fluid_simulater.AddConstantForceSource (resources.velocity_buffer, waterpipePosition,
                                                 waterPipeDirection, 6.4f, fluid_simulater.simulation_dimension* 0.0025f, fluid_simulater.simulation_dimension*0.001f);
 
-        fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
-        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
+        fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity);
         fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
+        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer, resources.boundary_pressure_offset_buffer);
         fluid_simulater.Diffuse                (resources.velocity_buffer                                   );
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
-        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
-        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
+        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer, resources.boundary_pressure_offset_buffer);
         fluid_simulater.Advect                 (resources.velocity_buffer, resources.velocity_buffer, fluid_simulater.velocity_dissapation);
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
-        fluid_simulater.HandleCornerBoundaries (resources.pressure_buffer, FieldType.Pressure               );
         fluid_simulater.HandleArbitaryBoundary (resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
-        fluid_simulater.HandleArbitaryBoundary (resources.pressure_buffer, resources.boundary_pressure_offset_buffer, FieldType.Pressure);
-        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
-        
+        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer, resources.boundary_pressure_offset_buffer);
+
 
 
 

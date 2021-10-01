@@ -987,7 +987,7 @@ MonoBehaviour:
     solver_iteration_num: 120
     grid_scale: 1
     time_step: 1
-    Viscosity: 0
+    Viscosity: 0.001
     force_strength: 0.6
     force_radius: 5
     force_falloff: 0.1

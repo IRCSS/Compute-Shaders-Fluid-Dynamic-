@@ -215,5 +215,5 @@
             }
             ENDCG 
         }
-    }
+    }FallBack "VertexLit"
 }

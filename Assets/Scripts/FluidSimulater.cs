@@ -90,6 +90,7 @@ public class FluidSimulater
 
     private Vector2       mouse_previus_pos;
     private bool          mouse_previus_outofBound;
+    private bool          using_arbitary_boundary;
     // ------------------------------------------------------------------
     // CONSTRUCTOR
 
@@ -108,6 +109,7 @@ public class FluidSimulater
 
         ApplyDyeKey   = KeyCode.Mouse0;
         ApplyForceKey = KeyCode.Mouse1;
+        using_arbitary_boundary = false;
 
     }
 
@@ -126,6 +128,7 @@ public class FluidSimulater
 
         ApplyDyeKey   = KeyCode.Mouse0;
         ApplyForceKey = KeyCode.Mouse1;
+        using_arbitary_boundary = false;
     }
 
     // ------------------------------------------------------------------
@@ -323,8 +326,8 @@ public class FluidSimulater
 
         
 
-        float centerFactor           = grid_scale * grid_scale / (Viscosity * time_step);
-        float reciprocal_of_diagonal = 1.0f / (4.0f + centerFactor);
+        float centerFactor           = 1.0f / (Viscosity * time_step);
+        float reciprocal_of_diagonal = (Viscosity * time_step) / (1.0f + 4.0f * (Viscosity * time_step));
 
         sim_command_buffer.SetGlobalFloat("_centerFactor",  centerFactor          );
         sim_command_buffer.SetGlobalFloat("_rDiagonal",     reciprocal_of_diagonal);
@@ -439,9 +442,79 @@ public class FluidSimulater
 
         // ---------------
 
+        HandleCornerBoundaries(pressure_field, FieldType.Pressure);
+
         CalculateDivergenceFreeFromPressureField(buffer_to_make_divergence_free, pressure_field, FluidGPUResources.buffer_pong, FluidGPUResources.buffer_ping);
 
         SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping,  "_Copy_Source");
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_make_divergence_free, "_Copy_Target");
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+
+        ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+        ClearBuffer(FluidGPUResources.buffer_pong, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+    }
+
+    public void Project(ComputeBuffer buffer_to_make_divergence_free, ComputeBuffer divergence_field, ComputeBuffer pressure_field, ComputeBuffer boundary_pressure_offset_buffer)
+    {
+        if (!IsValid()) return;
+        if (!FluidGPUResources.StaticResourcesCreated()) return;
+
+        CalculateFieldDivergence(buffer_to_make_divergence_free, divergence_field);
+
+        // ---------------
+
+        float centerFactor = -1.0f * grid_scale * grid_scale;
+        float diagonalFactor = 0.25f;
+
+        sim_command_buffer.SetGlobalFloat("_centerFactor", centerFactor);
+        sim_command_buffer.SetGlobalFloat("_rDiagonal", diagonalFactor);
+
+        SetBufferOnCommandList(sim_command_buffer, divergence_field, "_b_buffer");
+
+        ClearBuffer(pressure_field, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+
+
+        bool ping_as_results = false;
+
+        for (int i = 0; i < solver_iteration_num; i++)
+        {
+            ping_as_results = !ping_as_results;
+            if (ping_as_results)                     // Ping ponging back and forth to insure no racing condition. 
+            {
+                HandleCornerBoundaries(pressure_field, FieldType.Pressure);
+                SetBufferOnCommandList(sim_command_buffer, pressure_field, "_updated_x_buffer");
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_results");
+            }
+            else
+            {
+                HandleCornerBoundaries(FluidGPUResources.buffer_ping, FieldType.Pressure);
+                SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_updated_x_buffer");
+                SetBufferOnCommandList(sim_command_buffer, pressure_field, "_results");
+            }
+
+            sim_command_buffer.SetGlobalInt("_current_iteration", i);
+            DispatchComputeOnCommandBuffer(sim_command_buffer, SolverShader, _handle_Jacobi_Solve, simulation_dimension, simulation_dimension, 1);
+        }
+
+        if (ping_as_results)                         // The Ping ponging ended on the helper buffer ping. Copy it to the buffer_to_diffuse buffer
+        {
+            SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
+            SetBufferOnCommandList(sim_command_buffer, pressure_field, "_Copy_Target");
+            DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
+        }
+
+        ClearBuffer(FluidGPUResources.buffer_ping, new Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+
+        // ---------------
+
+        HandleCornerBoundaries(pressure_field, FieldType.Pressure);
+        if (using_arbitary_boundary)
+        {
+            HandleArbitaryBoundary(pressure_field, boundary_pressure_offset_buffer, FieldType.Pressure);
+        }
+        CalculateDivergenceFreeFromPressureField(buffer_to_make_divergence_free, pressure_field, FluidGPUResources.buffer_pong, FluidGPUResources.buffer_ping);
+
+        SetBufferOnCommandList(sim_command_buffer, FluidGPUResources.buffer_ping, "_Copy_Source");
         SetBufferOnCommandList(sim_command_buffer, buffer_to_make_divergence_free, "_Copy_Target");
         DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferUtilityShader, _handle_Copy_StructuredBuffer, simulation_dimension * simulation_dimension, 1, 1);
 
@@ -465,7 +538,7 @@ public class FluidSimulater
         }
         // -------------
 
-
+        using_arbitary_boundary = true;
 
         BorderShader.SetTexture(_handle_update_arbitary_boundary_offset, "_arbitary_boundaries_texture", boundaryTexture);
         BorderShader.SetInt    ("i_Resolution", (int)simulation_dimension);
