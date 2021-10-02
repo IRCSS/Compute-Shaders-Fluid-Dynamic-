@@ -78,7 +78,7 @@ Material:
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
-    - _WaterFogDensity: 0
+    - _WaterFogDensity: 40.1
     - _ZWrite: 1
     - _displacment: 1
     - _roughness: 0.1
@@ -86,5 +86,5 @@ Material:
     - _Color: {r: 0.7216981, g: 0.80286944, b: 1, a: 0.2509804}
     - _Color2: {r: 0.8349056, g: 0.90916777, b: 1, a: 0.27450982}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
-    - _WaterFogColor: {r: 0.25882354, g: 0.4269101, b: 0.59607846, a: 1}
+    - _WaterFogColor: {r: 0.42352942, g: 0.004191439, b: 0, a: 1}
     - _waterColor: {r: 0.7688679, g: 0.92060345, b: 1, a: 1}

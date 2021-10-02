@@ -95,6 +95,17 @@
             }
   
 
+            // Samples a Noise function 3 time to fake a noise based on 3 dimensional.
+            // BaseNoise Parmeter: xy are the panning speed of the first two noise sampleing along their uv. z is the tiling of the two sampels
+            // timeDistorParameter: x is the tiling of the time distortion sampeling and y is the speed of switching between first sampeling and second samepling                    
+            float Sampelfake3DNoise(const sampler2D noiseTexture, const float3 BaseNoiseParmeter, const float2 timeDistorParameter, const float2 uv) {
+                float n1 = tex2D(noiseTexture, uv *BaseNoiseParmeter.z + _Time.yy *BaseNoiseParmeter.xy);
+                float n2 = tex2D(noiseTexture, uv *BaseNoiseParmeter.z + float2(0.5, 0.5) + _Time.yy *BaseNoiseParmeter.xy);
+                float timeDistoration = tex2D(noiseTexture, uv.xy *timeDistorParameter.xx);
+                float t_v = abs(frac(_Time.y*timeDistorParameter.y + timeDistoration * 2. - 1.)*2. - 1.);
+                return lerp(n1, n2, t_v);
+            }
+
             float pressureToneMapping(float pressure)
             {
 
@@ -109,32 +120,43 @@
                 return clampValue;
             }
 
+            float2 clampVector(float2 v, float maxMaginitude)
+            {
+                float l = length(v);
+                float2 normalized = v / max(l, 0.00001);
+
+                return normalized * min(maxMaginitude,l);
+            }
+
+#define NoiseChangeSpeed 0.4
+#define FlowStrength -0.1
             // Calculate a normal from a height map
             float3 filterNormal(float2 uv, float texelSize)
             {
                 float4 h;
-                float center = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(uv.x, uv.y, 0., 0.)).x);
-                float2 centerFlow = tex2Dlod(_fountain_velocity_buffer, float4(uv.x, uv.y, 0., 0.));
+                float2 centerFlow = clampVector(tex2Dlod(_fountain_velocity_buffer, float4(uv.x, uv.y, 0., 0.)), 0.5);
+                float center = abs(pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(uv.xy + centerFlow.xy* FlowStrength, 0., 0.)).x));
                 float2 t  = uv + texelSize * float2(0, -1);
-                float3 noisePar = float3(2.0, 0.05 * center, 0.1);
+                float3 noisePar = float3(4.0, 0.10 * pow(center,1.1) , FlowStrength * smoothstep(0.2, 0., center));
                 float2 t2 = uv + 1.0/2048 * float2(0, -1) + centerFlow * noisePar.z;
 
                 h[0]  = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
 
-                h[0] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)*noisePar.x) *noisePar.y;
+               
+
+                h[0] += Sampelfake3DNoise(_NoiseTexture, float3(0.0, 0.0, 1.0), float2(0.4, NoiseChangeSpeed), float4(t2.x, t2.y, 0., 0.)*noisePar.x)*noisePar.y;
                 t  = uv + texelSize * float2(-1, 0);
                 t2 = uv + 1.0 / 256 * float2(-1, 0) + centerFlow * noisePar.z;
                 h[1] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
-                h[1] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)* noisePar.x) *noisePar.y;
+                h[1] += Sampelfake3DNoise(_NoiseTexture, float3(0.0, 0.0, 1.0), float2(0.4, NoiseChangeSpeed), float4(t2.x, t2.y, 0., 0.)*noisePar.x)*noisePar.y;
                 t = uv + texelSize * float2(1, 0);
                 t2 = uv + 1.0 / 256 * float2(1, 0) + centerFlow * noisePar.z;
                 h[2] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
-                h[2] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)*noisePar.x) *noisePar.y;
+                h[2] += Sampelfake3DNoise(_NoiseTexture, float3(0.0, 0.0, 1.0), float2(0.4, NoiseChangeSpeed), float4(t2.x, t2.y, 0., 0.)*noisePar.x)*noisePar.y;
                 t = uv + texelSize * float2(0, 1);
                 t2 = uv + 1.0 / 256 * float2(0, 1) + centerFlow * noisePar.z;
                 h[3] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
-                h[3] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)* noisePar.x) *noisePar.y;
-
+                h[3] += Sampelfake3DNoise(_NoiseTexture, float3(0.0, 0.0, 1.0), float2(0.4, NoiseChangeSpeed), float4(t2.x, t2.y, 0., 0.)*noisePar.x)*noisePar.y;
                 float3 n;
                 n.x = -(h[0] - h[3]);
                 n.z = (h[1] - h[2]);
