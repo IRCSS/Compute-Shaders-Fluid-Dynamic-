@@ -11,6 +11,7 @@
         _roughness  ("water roughness", Float) = 0.1
         _WaterFogColor ("water fog color", Color) = (1., 1., 1., 1.)
         _WaterFogDensity ("Water Fog Denisty", Float) = 1
+        _NoiseTexture("Noise Texture", 2D) = "white" {}
     }
     SubShader
     {
@@ -52,6 +53,8 @@
             sampler2D _Refelection_texture;
             sampler2D _Refraction_texture;
             sampler2D _CameraDepth_Texture;
+            sampler2D _fountain_velocity_buffer;
+            sampler2D _NoiseTexture;
 
             float3 _WaterFogColor;
             float  _WaterFogDensity;
@@ -110,14 +113,27 @@
             float3 filterNormal(float2 uv, float texelSize)
             {
                 float4 h;
-                float2 t = uv + texelSize * float2(0, -1);
-                h[0] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
-                t = uv + texelSize * float2(-1, 0);
+                float center = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(uv.x, uv.y, 0., 0.)).x);
+                float2 centerFlow = tex2Dlod(_fountain_velocity_buffer, float4(uv.x, uv.y, 0., 0.));
+                float2 t  = uv + texelSize * float2(0, -1);
+                float3 noisePar = float3(2.0, 0.05 * center, 0.1);
+                float2 t2 = uv + 1.0/2048 * float2(0, -1) + centerFlow * noisePar.z;
+
+                h[0]  = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
+
+                h[0] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)*noisePar.x) *noisePar.y;
+                t  = uv + texelSize * float2(-1, 0);
+                t2 = uv + 1.0 / 256 * float2(-1, 0) + centerFlow * noisePar.z;
                 h[1] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
+                h[1] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)* noisePar.x) *noisePar.y;
                 t = uv + texelSize * float2(1, 0);
+                t2 = uv + 1.0 / 256 * float2(1, 0) + centerFlow * noisePar.z;
                 h[2] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
+                h[2] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)*noisePar.x) *noisePar.y;
                 t = uv + texelSize * float2(0, 1);
+                t2 = uv + 1.0 / 256 * float2(0, 1) + centerFlow * noisePar.z;
                 h[3] = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(t.x, t.y, 0., 0.)).x);
+                h[3] += tex2D(_NoiseTexture, float4(t2.x, t2.y, 0., 0.)* noisePar.x) *noisePar.y;
 
                 float3 n;
                 n.x = -(h[0] - h[3]);
@@ -214,6 +230,7 @@
                 // Lighting 
                 
                 float3 normal  = filterNormal(i.uv, _canvas_texel_size);
+                       normal  = normalize(normal);
                        normal  = mul(_fountain2World, float4(normal.xyz, 0.));                                  // Calculate the surface normal. This is the normal of the plane, but modified by the height map displacement
 
                 float centeralPressure = pressureToneMapping(tex2Dlod(_fountain_pressure_buffer, float4(i.uv.xy, 0., 0.)).x);

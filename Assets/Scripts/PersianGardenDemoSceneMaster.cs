@@ -35,6 +35,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
     private RenderTexture     refraction_cam_texture;
     private RenderTexture     camera_depth_texture;
     private RenderTexture     fish_shadow_depth_texture;
+    private RenderTexture     velocity_texture;
 
     private CommandBuffer     render_water_cb;
     private CommandBuffer     fish_shadow_cb;
@@ -58,6 +59,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         refraction_cam_texture = new RenderTexture(reflection_cam_texture.descriptor);
         refraction_cam_texture.Create();
+
 
         camera_depth_texture = new RenderTexture(reflection_cam_texture.descriptor)
         {
@@ -95,8 +97,19 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
             format            = RenderTextureFormat.RFloat,
             wrapMode          = TextureWrapMode.Clamp,
         };
-
         pressure_texture.Create();
+        velocity_texture = new RenderTexture((int)fluid_simulater.canvas_dimension, (int)fluid_simulater.canvas_dimension, 0)
+        {
+            enableRandomWrite = true,
+            useMipMap = true,
+            graphicsFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R32G32_SFloat,
+            filterMode = FilterMode.Trilinear,
+            anisoLevel = 7,
+            format = RenderTextureFormat.RGFloat,
+            wrapMode = TextureWrapMode.Clamp,
+        };
+        velocity_texture.Create();
+
 
         //--
 
@@ -131,9 +144,11 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
 
 
-        fluid_simulater.CopyBufferToTexture(pressure_texture, resources.pressure_buffer);
+        fluid_simulater.CopyPressureBufferToTexture(pressure_texture, resources.pressure_buffer);
+        fluid_simulater.CopyVelocityBufferToTexture(velocity_texture, resources.velocity_buffer);
 
         Shader.SetGlobalTexture("_fountain_pressure_buffer", pressure_texture);
+        Shader.SetGlobalTexture("_fountain_velocity_buffer", velocity_texture);
 
         fluid_simulater.BindCommandBuffer();
 

@@ -71,7 +71,8 @@ public class FluidSimulater
 
     private int           _handle_add_dye                         ;
     private int           _handle_add_constant_dye_source         ;
-    private int           _handle_st2tx                           ;
+    private int           _handle_pressure_st2tx                  ;
+    private int           _handle_velocity_st2tx                  ;
     private int           _handle_Jacobi_Solve                    ;
     private int           _handle_Copy_StructuredBuffer           ;
     private int           _handle_Clear_StructuredBuffer          ;
@@ -172,24 +173,25 @@ public class FluidSimulater
         // -----------------------
         // Setting kernel handles
 
-        _handle_add_dye                         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                      );
-        _handle_add_constant_dye_source         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_dye"            );
-        _handle_add_dye_from_texture            =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"         );
-        _handle_st2tx                           =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "StructeredToTextureBillinear");
-        _handle_Jacobi_Solve                    =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                );
-        _handle_Copy_StructuredBuffer           =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"       );
-        _handle_Clear_StructuredBuffer          =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"      );
-        _handle_NeuMannBoundary                 =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"             );
-        _handle_addForceWithMouse               =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"              );
-        _handle_add_constant_force_source       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_force_at"       );
-        _handle_add_constant_uniform_force      =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_uniform_force"  );
-        _handle_advection                       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                   );
-        _handle_divergence                      =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                  );
-        _handle_calculate_divergence_free       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "calculate_divergence_free"   );
-        _handle_update_arbitary_boundary_offset =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "UpdateArbitaryBoundaryOffset");
-        _handle_arbitary_boundary_velocity      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryVelocity"    );
-        _handle_arbitary_boundary_pressure      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryPressure"    );
-        _handle_arbitary_boundary_dye           =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryDye"         );
+        _handle_add_dye                         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                                  );
+        _handle_add_constant_dye_source         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_dye"                        );
+        _handle_add_dye_from_texture            =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"                     );
+        _handle_pressure_st2tx                  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "PressureStructeredToTextureBillinearR32" );
+        _handle_velocity_st2tx                  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "VelocityStructeredToTextureBillinearRG32");
+        _handle_Copy_StructuredBuffer           =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"                   );
+        _handle_Jacobi_Solve                    =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                            );
+        _handle_Clear_StructuredBuffer          =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"                  );
+        _handle_NeuMannBoundary                 =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "NeuMannBoundary"                         );
+        _handle_addForceWithMouse               =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddForce_mouse"                          );
+        _handle_add_constant_force_source       =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_force_at"                   );
+        _handle_add_constant_uniform_force      =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_uniform_force"              );
+        _handle_advection                       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "advection"                               );
+        _handle_divergence                      =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "divergence"                              );
+        _handle_calculate_divergence_free       =  ComputeShaderUtility.GetKernelHandle( StokeNavierShader              , "calculate_divergence_free"               );
+        _handle_update_arbitary_boundary_offset =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "UpdateArbitaryBoundaryOffset"            );
+        _handle_arbitary_boundary_velocity      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryVelocity"                );
+        _handle_arbitary_boundary_pressure      =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryPressure"                );
+        _handle_arbitary_boundary_dye           =  ComputeShaderUtility.GetKernelHandle( BorderShader                   , "ArbitaryBoundaryDye"                     );
 
 
 
@@ -201,8 +203,9 @@ public class FluidSimulater
 
         UpdateRuntimeKernelParameters();
         
-        StructuredBufferToTextureShader.SetInt    ("_Results_Resolution",     (int) canvas_dimension    );
-        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results",       visulasation_texture);
+        StructuredBufferToTextureShader.SetInt    ("_Pressure_Results_Resolution",     (int) canvas_dimension    );
+        StructuredBufferToTextureShader.SetInt    ("_Velocity_Results_Resolution",     (int) canvas_dimension    );
+        StructuredBufferToTextureShader.SetTexture(_handle_pressure_st2tx, "_Results",       visulasation_texture);
 
         // -----------------------
 
@@ -644,9 +647,9 @@ public class FluidSimulater
         if (!IsValid()) return;
 
         SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
-        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", visulasation_texture);
+        StructuredBufferToTextureShader.SetTexture(_handle_pressure_st2tx, "_Results", visulasation_texture);
 
-        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_pressure_st2tx, canvas_dimension, canvas_dimension, 1);
 
         sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget);
 
@@ -658,23 +661,32 @@ public class FluidSimulater
         
 
         SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
-        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", visulasation_texture);
+        StructuredBufferToTextureShader.SetTexture(_handle_pressure_st2tx, "_Results", visulasation_texture);
 
-        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_pressure_st2tx, canvas_dimension, canvas_dimension, 1);
 
         sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget, blitMat);
 
     }
 
-    public void CopyBufferToTexture(RenderTexture texture, ComputeBuffer buffer_to_visualize)
+    public void CopyPressureBufferToTexture(RenderTexture texture, ComputeBuffer buffer_to_visualize)
     {
         if (!IsValid()) return;
 
-        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
-        StructuredBufferToTextureShader.SetTexture(_handle_st2tx, "_Results", texture);
-
-        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_st2tx, canvas_dimension, canvas_dimension, 1);
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Pressure_StructeredToTexture_Source_R32");
+        StructuredBufferToTextureShader.SetTexture(_handle_pressure_st2tx, "_Pressure_StructeredToTexture_Results_R32", texture);
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_pressure_st2tx, canvas_dimension, canvas_dimension, 1);
         
+    }
+
+    public void CopyVelocityBufferToTexture(RenderTexture texture, ComputeBuffer buffer_to_visualize)
+    {
+        if (!IsValid()) return;
+
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Velocity_StructeredToTexture_Source_RB32");
+        StructuredBufferToTextureShader.SetTexture(_handle_velocity_st2tx, "_Velocity_StructeredToTexture_Results_RB32", texture);
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_velocity_st2tx, canvas_dimension, canvas_dimension, 1);
+
     }
 
     public void HandleCornerBoundaries(ComputeBuffer SetBoundaryOn, FieldType fieldType)

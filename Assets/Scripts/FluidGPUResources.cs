@@ -27,6 +27,8 @@ public class FluidGPUResources
     public static ComputeBuffer buffer_ping;
     public static ComputeBuffer buffer_pong;
 
+    public static RenderTexture coppier_texture;
+
     //___________
     // private
 
@@ -91,6 +93,7 @@ public class FluidGPUResources
         cardinal_diections_LUT_Velocity.SetData(ArbitaryBoundaryLUTGenerator.GetVelocityLUT(), 0, 0,  32);
         cardinal_diections_LUT_Presure .SetData(ArbitaryBoundaryLUTGenerator.GetPressureLUT(), 0, 0,  32);
         cardinal_diections_LUT_Dye     .SetData(ArbitaryBoundaryLUTGenerator.GetDyeLUT(),      0, 0,  32);
+
         
     }
 
