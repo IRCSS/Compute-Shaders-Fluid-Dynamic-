@@ -96,6 +96,7 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
             anisoLevel        = 7,
             format            = RenderTextureFormat.RFloat,
             wrapMode          = TextureWrapMode.Clamp,
+            
         };
         pressure_texture.Create();
         velocity_texture = new RenderTexture((int)fluid_simulater.canvas_dimension, (int)fluid_simulater.canvas_dimension, 0)

@@ -1,6 +1,0 @@
-Read on handling arbitary bounderies and if easy to do implement, on 2D first then 3D
-add fresnel
-figure out how to do the refelection (cubemap, camera below current war for planar projection, screenspace?)
-shadow mapping for caustics
-implement caustics with distance depends channel split
-fix this thingi with high pressures peaking in and out of the surface water (probably a function that limits the movement)
