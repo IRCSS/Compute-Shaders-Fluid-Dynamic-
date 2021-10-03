@@ -476,9 +476,9 @@ MonoBehaviour:
   fovChangeSpeed: 0.02
   ShiftMultiplyer: 4
   InvertedY: 0
-  verticalFilter: 0.02
-  lateralFilter: 0.02
-  LongitudinalFilter: 0.02
+  verticalFilter: 0.04
+  lateralFilter: 0.04
+  LongitudinalFilter: 0.04
   mouseFilter: 0.04
   fovFilter: 0.02
 --- !u!4 &217146489 stripped
@@ -984,7 +984,7 @@ MonoBehaviour:
       type: 3}
     canvas_dimension: 1024
     simulation_dimension: 512
-    solver_iteration_num: 120
+    solver_iteration_num: 80
     grid_scale: 1
     time_step: 1
     Viscosity: 0.001
