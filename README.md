@@ -17,4 +17,4 @@ To get started with the repo, select any of the 3 demo scenes, under Assets/Scen
 
 Each of these scenes has a Manager Game object and a Manager script on it. Viewing this script in your code editor, you can see examples of how to properly initialize the fluid simulator engine and call its various functions. 
 
-I suggest looking at the 2D Fluid scene first, since it has the simplest implementation. 
+I suggest looking at the 2D Fluid scene first, since it has the simplest implementation. From there if you wish to know about the implementation of each step, you can jump to the defination of any of the functions (diffuse for example) and see how it is implemented. For further information on the architecture or how to add to it, have a look at the wiki.  
