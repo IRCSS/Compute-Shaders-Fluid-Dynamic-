@@ -80,13 +80,14 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         Shader.SetGlobalMatrix("_BounceCausticsLightDirection",new Matrix4x4(b[0], b[1], b[2], b[3]));
         //--
-
+        // Initialize the fluid simulator engine
         fluid_simulater.Initialize();
         resources = new FluidGPUResources(fluid_simulater);
         resources.Create();
 
-        fluid_simulater.SubmitMousePosOverrideDelegate(GetMousePosInSimulationSpaceUnitValue);
+        fluid_simulater.SubmitMousePosOverrideDelegate(GetMousePosInSimulationSpaceUnitValue);              // The default implementation treats the fluid simulation to be the whole screen space. If you want to map the fluid simulation to a specific part of your scene, you can use this function to correctly convert mouse position to fluid simulation space
 
+        // Create textures for visualizing presure or velocity
         pressure_texture = new RenderTexture((int)fluid_simulater.canvas_dimension, (int)fluid_simulater.canvas_dimension, 0)
         {
             enableRandomWrite = true,
@@ -114,13 +115,13 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
 
         //--
 
-        Shader.SetGlobalVector("_canvas_texel_size", new Vector4(1.0f/fluid_simulater.canvas_dimension, 1.0f / fluid_simulater.canvas_dimension, 0.0f, 0.0f));
-        Shader.SetGlobalVector("_lightDirection"   , mainDirectionLight.forward);
-        Shader.SetGlobalMatrix("_fountain2World"   , Tran_downLeft.localToWorldMatrix);
+        Shader.SetGlobalVector("_canvas_texel_size"       , new Vector4(1.0f/fluid_simulater.canvas_dimension, 1.0f / fluid_simulater.canvas_dimension, 0.0f, 0.0f));
+        Shader.SetGlobalVector("_lightDirection"          , mainDirectionLight.forward);
+        Shader.SetGlobalMatrix("_fountain2World"          , Tran_downLeft.localToWorldMatrix);
         Shader.SetGlobalFloat ("_aspect_ration_multiplier", (float)main_cam.pixelWidth/ (float)main_cam.pixelHeight);
 
         //--
-
+        // Build the Fluid Pipeline
         fluid_simulater.UpdateArbitaryBoundaryOffsets(boundaryTexture, resources);
 
         Vector2 waterpipePosition  = new Vector2(fluid_simulater.simulation_dimension / 2, fluid_simulater.simulation_dimension - fluid_simulater.simulation_dimension*0.1f);
@@ -173,8 +174,6 @@ public class PersianGardenDemoSceneMaster : MonoBehaviour
         }
 
         // Copy the content of the frame buffer into a texture to be sampled for refraction
-
-
         render_water_cb.Blit(BuiltinRenderTextureType.CameraTarget,  refraction_cam_texture);
         render_water_cb.Blit(BuiltinRenderTextureType.Depth, camera_depth_texture  );
         render_water_cb.SetRenderTarget(BuiltinRenderTextureType.CameraTarget);

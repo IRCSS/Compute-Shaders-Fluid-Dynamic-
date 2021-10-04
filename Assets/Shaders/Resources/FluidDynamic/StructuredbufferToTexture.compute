@@ -5,6 +5,8 @@
 // KERNELS
 #pragma kernel PressureStructeredToTextureBillinearR32
 #pragma kernel VelocityStructeredToTextureBillinearRG32
+#pragma kernel DyeStructeredToTextureBillinearRGB8
+
 
 //____________________________________________________________________________________
 // DECLERNATIONS
@@ -16,6 +18,9 @@
 
 //____________________________________________________________________________________
 // MAIN FUNCTIONS
+// The following 3 functions have different definations and identical code, due to the limitations unity has with Command Buffers not being able to set 
+// None Global texture, specifically on kernels. Hence I need a unique function + texture for each, so that I can bind the texture once on start up
+// but still use these different kernels in the same code in the same pipeline 
 
 // StructeredToTextureBillinear DECLERNATIONS
 
@@ -24,7 +29,7 @@ RWTexture2D<float4>        _Pressure_StructeredToTexture_Results_R32;
 int                        _Pressure_Results_Resolution;
 
 //----------------------------------------------------------------------------
-// Function         : AddDye
+// Function         : PressureStructeredToTextureBillinearR32
 // Description      : This kernel blits a structured buffer on top of a render texture
 //                    for visualisation. It runs once per pixel of the target render texture
 //                    and in case the the render texture is higher res than the source, it bilinearly
@@ -34,7 +39,7 @@ int                        _Pressure_Results_Resolution;
 void PressureStructeredToTextureBillinearR32(uint3 id : SV_DispatchThreadID)
 {
     float2 coord  = (float2)id.xy / (float)(_Pressure_Results_Resolution -1 );          // first normailizing the thread ids based on the targets resoltuion
-           coord *= (float) (i_Resolution-1);                                  // remapping it to the coordinates of the structured buffer, but still as 2D ids. 
+           coord *= (float) (i_Resolution-1);                                           // remapping it to the coordinates of the structured buffer, but still as 2D ids. 
 
            _Pressure_StructeredToTexture_Results_R32[id.xy] = StructuredBufferBilinearLoad(_Pressure_StructeredToTexture_Source_R32, coord);
 
@@ -46,7 +51,7 @@ RWTexture2D<float4>        _Velocity_StructeredToTexture_Results_RB32;
 int                        _Velocity_Results_Resolution;
 
 //----------------------------------------------------------------------------
-// Function         : AddDye
+// Function         : VelocityStructeredToTextureBillinearRG32
 // Description      : This kernel blits a structured buffer on top of a render texture
 //                    for visualisation. It runs once per pixel of the target render texture
 //                    and in case the the render texture is higher res than the source, it bilinearly
@@ -55,9 +60,30 @@ int                        _Velocity_Results_Resolution;
 [numthreads(16, 16, 1)]
 void VelocityStructeredToTextureBillinearRG32(uint3 id : SV_DispatchThreadID)
 {
-    float2 coord = (float2)id.xy / (float)(_Pressure_Results_Resolution - 1);          // first normailizing the thread ids based on the targets resoltuion
-    coord *= (float)(i_Resolution - 1);                                  // remapping it to the coordinates of the structured buffer, but still as 2D ids. 
+    float2 coord = (float2)id.xy / (float)(_Velocity_Results_Resolution - 1);          // first normailizing the thread ids based on the targets resoltuion
+    coord *= (float)(i_Resolution - 1);                                                // remapping it to the coordinates of the structured buffer, but still as 2D ids. 
 
     _Velocity_StructeredToTexture_Results_RB32[id.xy] = StructuredBufferBilinearLoad(_Velocity_StructeredToTexture_Source_RB32, coord);
+
+}
+
+StructuredBuffer<float4>   _Dye_StructeredToTexture_Source_RBB8;
+RWTexture2D<float4>        _Dye_StructeredToTexture_Results_RBB8;
+int                        _Dye_Results_Resolution;
+
+//----------------------------------------------------------------------------
+// Function         : DyeStructeredToTextureBillinearRGB8
+// Description      : This kernel blits a structured buffer on top of a render texture
+//                    for visualisation. It runs once per pixel of the target render texture
+//                    and in case the the render texture is higher res than the source, it bilinearly
+//                    interpolates between the closest structuredbuffer entries
+//----------------------------------------------------------------------------
+[numthreads(16, 16, 1)]
+void DyeStructeredToTextureBillinearRGB8(uint3 id : SV_DispatchThreadID)
+{
+    float2 coord = (float2)id.xy / (float)(_Dye_Results_Resolution - 1);          // first normailizing the thread ids based on the targets resoltuion
+    coord *= (float)(i_Resolution - 1);                                           // remapping it to the coordinates of the structured buffer, but still as 2D ids. 
+
+    _Dye_StructeredToTexture_Results_RBB8[id.xy] = StructuredBufferBilinearLoad(_Dye_StructeredToTexture_Source_RBB8, coord);
 
 }

@@ -39,11 +39,12 @@ RWStructuredBuffer<float4> _new_advected_field;                             // T
 // Function         : Advection
 // Description      : Advection is the part of the equation that is responsible for carrying
 //                    things along the fluid field. This can be head, densities or even the 
-//                    the velocity of the fluid itself. It works by tracing backwards from each fragment
-//                    along the velocity field, and moving the passive value at its destination
-//                    forward to the starting point.It performs bilinear interpolation at the
-//                    destination to get a smooth resulting field. It also clamps the velocities
-//                    on the bounderies.
+//                    the velocity of the fluid itself. It works by tracing backwards in time
+//                    and seeing what qunatities the current velocity would have brought to the 
+//                    cell which is being examined.
+//                    It performs bilinear interpolation at the destination to get a smooth
+//                    resulting field. It also clamps the velocities on the bounderies.
+
 //----------------------------------------------------------------------------
 
 [numthreads(16,16,1)]                                                        // Runs once per simulation grid
@@ -57,10 +58,10 @@ void advection(uint3 id : SV_DispatchThreadID)
                                   (1. / i_grid_scale)) ;                     // The speed is in the unite of grids, but since the grid might not be unit-scale, we need to also scale by the grid cell size.
     
     
-    advection_source_coord = clamp(advection_source_coord,                  // Handling the case where the velocity traces back to outside the bounds of the buffer
-                                   0.0, i_Resolution - 1.0);                // left hand side ensures the smallest element to read is element , and the biggest n-1
+    advection_source_coord = clamp(advection_source_coord,                   // Handling the case where the velocity traces back to outside the bounds of the buffer
+                                   0.0, i_Resolution - 1.0);                 // left hand side ensures the smallest element to read is element , and the biggest n-1
     
-    _new_advected_field[id2Dto1D(coord)] = _dissipationFactor *             // Disspation factor 1 = lasts forever, 0 = instantly dissipates, dunno how physcilly accurate this is. 
+    _new_advected_field[id2Dto1D(coord)] = _dissipationFactor *              // Disspation factor 1 = lasts forever, 0 = instantly dissipates, dunno how physcilly accurate this is. 
                                            StructuredBufferBilinearLoad(_field_to_advect_buffer, advection_source_coord);
    // _new_advected_field[id2Dto1D(coord)] = _dissipationFactor * _field_to_advect_buffer[id2Dto1D(advection_source_coord)];
 }
@@ -82,7 +83,7 @@ RWStructuredBuffer<float4>   _divergence_values;                            // T
 //                    The quanteties we calculate are at first not divergence free, however by
 //                    calculating its divergence and using a possion equation we can split up the 
 //                    the vector field in a divergence and curl components, and keep the curl one.
-//                    
+//                    For a more none math explaination, look at my blog post Gentle Introduction to Fluid Simulation for Programmers and Techincal Artists
 //                    Divergence = partial(field.x)/ partial(x) + partial(field.y)/partial(y)
 //                    The partial(x) = partial(y) = 1.0/(2.0*cellSize)
 //----------------------------------------------------------------------------

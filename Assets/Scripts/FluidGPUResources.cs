@@ -12,20 +12,20 @@ public class FluidGPUResources
     [Header("Compute Buffers")]
     [Space(2)]
 
-    public ComputeBuffer dye_buffer;
-    public ComputeBuffer velocity_buffer;
-    public ComputeBuffer divergence_buffer;
-    public ComputeBuffer pressure_buffer;
+    public ComputeBuffer dye_buffer       ;                        // Contains the amount of dye per cell across the whole field. For a colored Dye, this is a RGB value
+    public ComputeBuffer velocity_buffer  ;                        // The amount of velocity per cell
+    public ComputeBuffer divergence_buffer;                        // How much divergence is in each cell. This is calculated every frame from the velocity buffer
+    public ComputeBuffer pressure_buffer  ;                        // How much pressure is build up in each frame, calculated from velocity buffer and divergence buffer
 
-    public ComputeBuffer cardinal_diections_LUT_Velocity;
-    public ComputeBuffer cardinal_diections_LUT_Presure ;
-    public ComputeBuffer cardinal_diections_LUT_Dye     ;
-    public ComputeBuffer boundary_velocity_offset_buffer;
-    public ComputeBuffer boundary_pressure_offset_buffer;
-    public ComputeBuffer boundary_dye_offset_buffer     ;
+    public ComputeBuffer cardinal_diections_LUT_Velocity;          // Use for arbitrary bounderies . A look up table containing the different normals permutation of boundaries
+    public ComputeBuffer cardinal_diections_LUT_Presure ;          // Use for arbitrary bounderies . A look up table containing the different normals permutation of boundaries
+    public ComputeBuffer cardinal_diections_LUT_Dye     ;          // Use for arbitrary bounderies . A look up table containing the different normals permutation of boundaries
+    public ComputeBuffer boundary_velocity_offset_buffer;          // These buffers contain the per cell normals of the arbitrary bounderies
+    public ComputeBuffer boundary_pressure_offset_buffer;          // These buffers contain the per cell normals of the arbitrary bounderies
+    public ComputeBuffer boundary_dye_offset_buffer     ;          // These buffers contain the per cell normals of the arbitrary bounderies
 
-    public static ComputeBuffer buffer_ping;
-    public static ComputeBuffer buffer_pong;
+    public static ComputeBuffer buffer_ping;                       // Used for solver loops, by ping ponging back and forth between these two, you can execture a loop
+    public static ComputeBuffer buffer_pong;                       // Used for solver loops, by ping ponging back and forth between these two, you can execture a loop
 
     public static RenderTexture coppier_texture;
 

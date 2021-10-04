@@ -28,28 +28,28 @@ public class FluidSimulater
 
     [Header("Compute Shader Refs")]
     [Space(2)]
-    public ComputeShader StokeNavierShader;
-    public ComputeShader SolverShader;
-    public ComputeShader BorderShader;
-    public ComputeShader StructuredBufferToTextureShader;
-    public ComputeShader UserInputShader;
-    public ComputeShader StructuredBufferUtilityShader;
+    public ComputeShader StokeNavierShader               ; // Contains the code for Advection, Calculating Divergence of a scalar Field and calculating the final divergence free velocity through velocity - Gradient(Pressure)      
+    public ComputeShader SolverShader                    ; // This contains the solvers. At the moment there is only Jacobbi inside, though you can extend it as you wish
+    public ComputeShader BorderShader                    ; // Dealing with the four corners and arbitary bounderis
+    public ComputeShader StructuredBufferToTextureShader ; // Series of utility kernels to convert structured buffers to textures
+    public ComputeShader UserInputShader                 ; // The kernels that add user input (dye or force, through constant stream, images, mouse input etc)
+    public ComputeShader StructuredBufferUtilityShader   ; // Series of utility functions to do things like bilinear filtering on structured buffers
 
     [Space(4)]
     [Header("Simulation Settings")]
     [Space(2)]
     public uint          canvas_dimension     = 512;          // Resolution of the render target used at the end, this can be lower or higher than the actual simulation grid resoltion
     public uint          simulation_dimension = 256;          // Resolution of the simulation grid
-    public uint          solver_iteration_num = 80;
-    public float         grid_scale           = 1;
-    public float         time_step            = 1;
-    public float         Viscosity            = 0.5f;
-    public float         force_strength       = 1.0f;
-    public float         force_radius         = 1;
-    public float         force_falloff        = 2;
-    public float         dye_radius           = 1.0f;
-    public float         dye_falloff          = 2.0f;
-    public float         velocity_dissapation = 0.999f;
+    public uint          solver_iteration_num = 80;           // Number of iterations the solvers go through, increase this for more accurate simulation, and decrease for better performance
+    public float         grid_scale           = 1;            // The size of a grid, this is relevant for the calculations in relation to the value of velocity etc, you can and should just leave it as 1. 
+    public float         time_step            = 1;            // Leave this also as one unless you want to view the simulation in slow motion or speed it up. Be aware that larger time steps can lead to an in accurate simulation
+    public float         Viscosity            = 0.5f;         // This factor describes the fluids resistence towards motion, higher viscosity value will cause greater diffusion. You can seprate the viscosity of dye from velocity, atm both are the same
+    public float         force_strength       = 1.0f;         // multiplyer on your mouse movement, higher number leads to strong force
+    public float         force_radius         = 1;            // how large the area around your mouse is which recieves the force
+    public float         force_falloff        = 2;            // This creates a soft brush of a sort for force application
+    public float         dye_radius           = 1.0f;         // Exact same  behaviour as the force one
+    public float         dye_falloff          = 2.0f;         // Exact same  behaviour as the force one
+    public float         velocity_dissapation = 0.999f;       // How fast does the velocity dissapate, even if you leave this at one, you will still get some dissipation due to nummerical errors
 
 
     [Space(4)]
@@ -69,10 +69,12 @@ public class FluidSimulater
 
     private GetMousePositionCallBack mousPosOverrider;               // If this is NULL it is assumed the calculation is happening in screen space and the screen space pos is used for input position
 
+    // The handles for different kernels, for the documentation of what each kernel does, refer to their definition in the compute shader files
     private int           _handle_add_dye                         ;
     private int           _handle_add_constant_dye_source         ;
     private int           _handle_pressure_st2tx                  ;
     private int           _handle_velocity_st2tx                  ;
+    private int           _handle_dye_st2tx                       ;
     private int           _handle_Jacobi_Solve                    ;
     private int           _handle_Copy_StructuredBuffer           ;
     private int           _handle_Clear_StructuredBuffer          ;
@@ -89,6 +91,7 @@ public class FluidSimulater
     private int           _handle_arbitary_boundary_dye           ;
     private int           _handle_add_constant_uniform_force      ;
 
+    // Info used for input through mouse 
     private Vector2       mouse_previus_pos;
     private bool          mouse_previus_outofBound;
     private bool          using_arbitary_boundary;
@@ -136,7 +139,7 @@ public class FluidSimulater
     // DESTRUCTOR
 
         
-    public void Release()
+    public void Release()             // Make sure to call this function at the end of your implementation on end play
     {
         visulasation_texture.Release();
         ComputeShaderUtility.Release();
@@ -144,7 +147,7 @@ public class FluidSimulater
     // ------------------------------------------------------------------
     // INITALISATION
 
-    public void Initialize()
+    public void Initialize()          // This function needs to be called before you start using the fluid engine
     {
 
         ComputeShaderUtility.Initialize();
@@ -154,6 +157,7 @@ public class FluidSimulater
         main_cam = Camera.main;
         if (main_cam == null) Debug.LogError("Could not find main camera, make sure the camera is tagged as main");
         
+        // Depricated: this was for the case of the fluid simulation covering the whole screen
         //main_cam.orthographic     = true;                                                                     // Make sure the camera is ortho. Perspecitve camera has a transformation matrix which will screw with everything
         //main_cam.aspect           = 1.0f;
         //main_cam.orthographicSize = 1;
@@ -172,12 +176,14 @@ public class FluidSimulater
         visulasation_texture.Create();
         // -----------------------
         // Setting kernel handles
+        // Always use the GerKernelHandle Method, this methods uses a refelection system of a sort to make error handeling and calling functions easier
 
         _handle_add_dye                         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye"                                  );
         _handle_add_constant_dye_source         =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "Add_constant_dye"                        );
         _handle_add_dye_from_texture            =  ComputeShaderUtility.GetKernelHandle( UserInputShader                , "AddDye_from_picture"                     );
         _handle_pressure_st2tx                  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "PressureStructeredToTextureBillinearR32" );
         _handle_velocity_st2tx                  =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "VelocityStructeredToTextureBillinearRG32");
+        _handle_dye_st2tx                       =  ComputeShaderUtility.GetKernelHandle( StructuredBufferToTextureShader, "DyeStructeredToTextureBillinearRGB8"     );
         _handle_Copy_StructuredBuffer           =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Copy_StructuredBuffer"                   );
         _handle_Jacobi_Solve                    =  ComputeShaderUtility.GetKernelHandle( SolverShader                   , "Jacobi_Solve"                            );
         _handle_Clear_StructuredBuffer          =  ComputeShaderUtility.GetKernelHandle( StructuredBufferUtilityShader  , "Clear_StructuredBuffer"                  );
@@ -205,6 +211,7 @@ public class FluidSimulater
         
         StructuredBufferToTextureShader.SetInt    ("_Pressure_Results_Resolution",     (int) canvas_dimension    );
         StructuredBufferToTextureShader.SetInt    ("_Velocity_Results_Resolution",     (int) canvas_dimension    );
+        StructuredBufferToTextureShader.SetInt    ("_Dye_Results_Resolution",          (int) canvas_dimension    );
         StructuredBufferToTextureShader.SetTexture(_handle_pressure_st2tx, "_Results",       visulasation_texture);
 
         // -----------------------
@@ -223,7 +230,7 @@ public class FluidSimulater
 
     }
 
-    public void SubmitMousePosOverrideDelegate(GetMousePositionCallBack getterFunction)
+    public void SubmitMousePosOverrideDelegate(GetMousePositionCallBack getterFunction) // This function is called to supply the mapping between the mouse position and simulation space, you can leave it at the default if your simulation space equals your screen position
     {
         mousPosOverrider = getterFunction;
     }
@@ -231,7 +238,7 @@ public class FluidSimulater
     // ------------------------------------------------------------------
     // LOOP
 
-    public void Tick(float deltaTime)
+    public void Tick(float deltaTime)                                                  // should be called at same rate you wish to update your simulation, usually once a frame in update
     {
         UpdateRuntimeKernelParameters();
     }
@@ -243,6 +250,7 @@ public class FluidSimulater
 
     public void AddUserForce(ComputeBuffer force_buffer)
     {
+        if (!IsValid()) return;
         SetBufferOnCommandList(sim_command_buffer, force_buffer, "_user_applied_force_buffer");
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_addForceWithMouse, simulation_dimension, simulation_dimension, 1);
     }
@@ -268,6 +276,7 @@ public class FluidSimulater
 
     public void AddConstantUniformForce(ComputeBuffer force_buffer, Vector2 force)
     {
+        if (!IsValid()) return;
         UserInputShader.SetVector("_uniform_force", force);
         SetBufferOnCommandList(sim_command_buffer, force_buffer, "_user_applied_force_buffer");
         DispatchComputeOnCommandBuffer(sim_command_buffer, UserInputShader, _handle_add_constant_uniform_force, simulation_dimension, simulation_dimension, 1);
@@ -646,10 +655,10 @@ public class FluidSimulater
     {
         if (!IsValid()) return;
 
-        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
-        StructuredBufferToTextureShader.SetTexture(_handle_pressure_st2tx, "_Results", visulasation_texture);
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Dye_StructeredToTexture_Source_RBB8");
+        StructuredBufferToTextureShader.SetTexture(_handle_dye_st2tx, "_Dye_StructeredToTexture_Results_RBB8", visulasation_texture);
 
-        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_pressure_st2tx, canvas_dimension, canvas_dimension, 1);
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_dye_st2tx, canvas_dimension, canvas_dimension, 1);
 
         sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget);
 
@@ -660,10 +669,10 @@ public class FluidSimulater
         if (!IsValid()) return;
         
 
-        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Source");
-        StructuredBufferToTextureShader.SetTexture(_handle_pressure_st2tx, "_Results", visulasation_texture);
+        SetBufferOnCommandList(sim_command_buffer, buffer_to_visualize, "_Dye_StructeredToTexture_Source_RBB8");
+        StructuredBufferToTextureShader.SetTexture(_handle_dye_st2tx, "_Dye_StructeredToTexture_Results_RBB8", visulasation_texture);
 
-        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_pressure_st2tx, canvas_dimension, canvas_dimension, 1);
+        DispatchComputeOnCommandBuffer(sim_command_buffer, StructuredBufferToTextureShader, _handle_dye_st2tx, canvas_dimension, canvas_dimension, 1);
 
         sim_command_buffer.Blit(visulasation_texture, BuiltinRenderTextureType.CameraTarget, blitMat);
 

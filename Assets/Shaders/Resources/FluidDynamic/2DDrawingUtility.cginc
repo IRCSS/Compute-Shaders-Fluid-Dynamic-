@@ -1,6 +1,7 @@
 #ifndef __2D_DRAWING_UTILITY__
 #define __2D_DRAWING_UTILITY__
 
+// This function is used to a line between two points. The points are defined through point A and Point A + direction* length
 float DrawHalfVectorWithLength(float2 origin, float2 line_direction, float len, float2 uv, float size, float smoothness){
     
            uv  -= origin;
