@@ -17,4 +17,25 @@ To get started with the repo, select any of the 3 demo scenes, under Assets/Scen
 
 Each of these scenes has a Manager Game object and a Manager script on it. Viewing this script in your code editor, you can see examples of how to properly initialize the fluid simulator engine and call its various functions. 
 
-I suggest looking at the 2D Fluid scene first, since it has the simplest implementation. From there if you wish to know about the implementation of each step, you can jump to the defination of any of the functions (diffuse for example) and see how it is implemented. For further information on the architecture or how to add to it, have a look at the wiki.  
+I suggest looking at the 2D Fluid scene first, since it has the simplest implementation. From there if you wish to know about the implementation of each step, you can jump to the defination of any of the functions (diffuse for example) and see how it is implemented.
+
+------------------
+Fluid Engine: Use
+=================
+
+The general Architecture of the engine is as follows: it has a **Fluid Simulator** class, which you need to properly initialize before use, and deintialize before you switch out of the scene or close the game, and **Fluid GPU Resrouce** class, where you need to do the same.
+Once you have the initialization behind you, you can build a pipeline, where you call the different steps of the fluid simulation, on various fields such as velocity, dye, temperature etc. A very simple example from the 2DFluid Demo Scene looks like this: 
+![2D Demo Setup](documentation/2DDemoSetup.jpg)
+
+Base on this code you can see that you need these 5 sections: 
+1. You need to declare your Fluid Simulator class as a public memeber, through these you can set all the control paramaters as well as (**Make sure this is set**) all the references to the various compute shaders in the project
+2. Initializasion, do this somewhere like begin play/ Start
+3. Pipeline Building, you can configure this to your need, for example I am calling Project several times at the cost of performance, but you can call it only once. Also beside this dye you can use several dye textures etc, or none, or another field. 
+4. The GPU resources need to be released so make sure you call these 
+5. The Tick function sets all the relevant paramters (such as mouse position etc) in the update. Call this in your update or as regural as you want your simulation updated
+
+For more information, read through the Fluid Simulator class, most things are commented there, even more info are in the Shader files, where the operations are explained. If you are missing the baisic idea of Fluid Simulation, make sure to read my blog post linked above first. 
+
+Fluid Engine: Adding New Things and Architecture
+=================
+
