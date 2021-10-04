@@ -480,7 +480,7 @@ MonoBehaviour:
   lateralFilter: 0.04
   LongitudinalFilter: 0.04
   mouseFilter: 0.04
-  fovFilter: 0.02
+  fovFilter: 0.005
 --- !u!4 &217146489 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4216859302048453862, guid: 4e8d7c9ed4f023a408d900d9ca1c7345,
