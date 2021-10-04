@@ -3,6 +3,7 @@ Fluid Simulation Implemented in Compute shaders in Unity 3D
 This repo contains code for a fluid simulation pipeline implmented in Compute shaders. The code has been tested on Unity 2019.1.14f1 Windows DX11, with the Legacy renderer. 
 
 You can read the full explaination of the technique on my blog: [Gentle Introduction to Fluid Simulation for Programmers and Technical Artists](https://medium.com/@shahriyarshahrabi/gentle-introduction-to-fluid-simulation-for-programmers-and-technical-artists-7c0045c40bac)
+The mesh used here is also modled/ textured by me, which you can download for free [here](https://skfb.ly/6XZx7). 
 
 
 
