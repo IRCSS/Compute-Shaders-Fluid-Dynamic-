@@ -5,7 +5,10 @@
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "Queue" = "Transparent" "RenderType" = "Transparent"}
+        ZWrite Off
+        Blend SrcAlpha OneMinusSrcAlpha
+        Cull Off
         LOD 100
 
         Pass
@@ -29,6 +32,8 @@
             };
 
 
+            sampler2D _fogBuffer;
+
             v2f vert (appdata v)
             {
                 v2f o;
@@ -39,10 +44,12 @@
 
 
             float StackDepth;
+            float4 _fogColor;
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 col = float4( i.uv.xy, 0., 1.);
+                fixed4 col = tex2D(_fogBuffer, i.uv);
 
+            col = float4(_fogColor.xyz, saturate(col.r* StackDepth) * _fogColor.a);
                 return col;
             }
             ENDCG

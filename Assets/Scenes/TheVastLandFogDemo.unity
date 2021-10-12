@@ -132,6 +132,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: TheVastLand3
       objectReference: {fileID: 0}
+    - target: {fileID: -927199367670048503, guid: f0c1c4867df841b46901bd60ef0f3012,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: -4216859302048453862, guid: f0c1c4867df841b46901bd60ef0f3012,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -213,7 +218,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 562174374}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 5.87, y: 0, z: 6.46}
+  m_LocalPosition: {x: 5.64, y: 0, z: -6.41}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1932721271}
@@ -262,16 +267,18 @@ MonoBehaviour:
     solver_iteration_num: 80
     grid_scale: 1
     time_step: 1
-    Viscosity: 0.5
+    Viscosity: 0.001
     force_strength: 1
-    force_radius: 1
-    force_falloff: 2
-    dye_radius: 1
-    dye_falloff: 2
+    force_radius: 5
+    force_falloff: 5
+    dye_radius: 8
+    dye_falloff: 5
     velocity_dissapation: 0.999
     ApplyDyeKey: 323
-    ApplyForceKey: 324
-  fogStackDepth: 5
+    ApplyForceKey: 102
+  fogColor: {r: 0.7123517, g: 0.888, b: 0.7123517, a: 1}
+  fogStackDepth: 16
+  distanceBetwenPlanes: 0.025
   corners:
     leftBottom: {fileID: 1771360245}
     rightBottom: {fileID: 562174375}
@@ -315,7 +322,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1507287598}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -7.31, y: 0, z: -6.5}
+  m_LocalPosition: {x: -7.43, y: 0, z: 6.31}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1932721271}
@@ -345,7 +352,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1727556885}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -7.31, y: 0, z: 6.46}
+  m_LocalPosition: {x: 5.64, y: 0, z: 6.31}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1932721271}
@@ -375,7 +382,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1771360244}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 5.87, y: 0, z: -6.5}
+  m_LocalPosition: {x: -7.43, y: 0, z: -6.41}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1932721271}
@@ -426,6 +433,7 @@ GameObject:
   - component: {fileID: 2075383223}
   - component: {fileID: 2075383222}
   - component: {fileID: 2075383221}
+  - component: {fileID: 2075383224}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -491,10 +499,34 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2075383220}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.30437467, y: -0, z: -0, w: 0.95255244}
+  m_LocalPosition: {x: 0, y: 7.71, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 35.441, y: 0, z: 0}
+--- !u!114 &2075383224
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2075383220}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2b50e28a586dd64da086fec078895de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lateralSpeed: 0.0015
+  LongitudinalSpeed: 0.0008
+  verticalSpeed: 0.001
+  mouseMoevementSpeed: 0.2
+  fovChangeSpeed: 0.0008
+  ShiftMultiplyer: 4
+  InvertedY: 0
+  verticalFilter: 0.1
+  lateralFilter: 0.1
+  LongitudinalFilter: 0.1
+  mouseFilter: 0.04
+  fovFilter: 0.0001
