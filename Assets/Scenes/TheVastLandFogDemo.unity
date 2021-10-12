@@ -248,6 +248,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8016e5fb5f2026a4a9397b9b59d71aa0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fluid_simulater:
+    StokeNavierShader: {fileID: 7200000, guid: df7f4f273ead5da46a16f2b380923bf9, type: 3}
+    SolverShader: {fileID: 7200000, guid: e3454dd6b2d82234d95b1976b13b637d, type: 3}
+    BorderShader: {fileID: 7200000, guid: a9218c8a4bd1ae5469748c6ee51ade44, type: 3}
+    StructuredBufferToTextureShader: {fileID: 7200000, guid: 2696eed86d6b69546b26735658355ea6,
+      type: 3}
+    UserInputShader: {fileID: 7200000, guid: 34a77dcc698611749a10834d32f57b79, type: 3}
+    StructuredBufferUtilityShader: {fileID: 7200000, guid: 055ac4473d61fb445993e89239fc047c,
+      type: 3}
+    canvas_dimension: 512
+    simulation_dimension: 256
+    solver_iteration_num: 80
+    grid_scale: 1
+    time_step: 1
+    Viscosity: 0.5
+    force_strength: 1
+    force_radius: 1
+    force_falloff: 2
+    dye_radius: 1
+    dye_falloff: 2
+    velocity_dissapation: 0.999
+    ApplyDyeKey: 323
+    ApplyForceKey: 324
   fogStackDepth: 5
   corners:
     leftBottom: {fileID: 1771360245}

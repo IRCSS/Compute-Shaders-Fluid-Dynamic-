@@ -32,16 +32,33 @@ public class VastLandDemoMaster : MonoBehaviour
     // ---------------------------------------------
     // PUBLIC
 
+    public FluidSimulater fluid_simulater;
+
     public int                       fogStackDepth = 1;
     public SimulationDomainIndicator corners      ;
 
+    // ---------------------------------------------
+    // PRIVATE
 
-    private Material[] fogRenderStackMats;
+    private FluidGPUResources resources;
+    private Material[]        fogRenderStackMats;
+    private Camera            main_cam;
 
-
-    // Start is called before the first frame update
+    // ------------------------------------------------------------------
+    // INITALISATION
     void Start()
     {
+
+
+        main_cam = Camera.main;
+        if (main_cam == null) Debug.LogError("Could not find main camera, make sure the camera is tagged as main");
+
+        //--------------------------------------------
+        fluid_simulater.Initialize();
+        resources = new FluidGPUResources(fluid_simulater);
+        resources.Create();
+
+        //--------------------------------------------
         // Generate fog Mesh
 
         Mesh fogMeshBase = new Mesh();
@@ -52,7 +69,7 @@ public class VastLandDemoMaster : MonoBehaviour
         Shader s = Shader.Find("Unlit/VastlandFog");
         if (!s) { Debug.LogError("Couldnt find the Vastland Fog shader!"); return; }
 
-        for (int i = 0; i<fogStackDepth; i++)
+        for (int i = 0; i < fogStackDepth; i++)
         {
             fogRenderStackMats[i] = new Material(s);
             fogRenderStackMats[i].SetFloat("StackDepth", (float)i / (float)fogStackDepth);
@@ -64,12 +81,47 @@ public class VastLandDemoMaster : MonoBehaviour
             gb.AddComponent<MeshFilter>().sharedMesh = fogMeshBase;
         }
 
+
+        //--------------------------------------------
+
+
+        fluid_simulater.AddUserForce           (resources.velocity_buffer                                   );
+        fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
+        fluid_simulater.Diffuse                (resources.velocity_buffer                                   );
+        fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
+        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
+        fluid_simulater.Advect                 (resources.velocity_buffer, resources.velocity_buffer, 0.999f);
+        fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
+        fluid_simulater.Project                (resources.velocity_buffer, resources.divergence_buffer, resources.pressure_buffer);
+
+
+
+        fluid_simulater.AddDye                 (resources.dye_buffer                                        );
+        fluid_simulater.Advect                 (resources.dye_buffer, resources.velocity_buffer, 0.992f);
+        fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye                         );
+        fluid_simulater.Diffuse                (resources.dye_buffer                                        );
+        fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye                         );
+
+        fluid_simulater.Visualiuse             (resources.dye_buffer);
+
+        fluid_simulater.BindCommandBuffer();
+
     }
 
-    // Update is called once per frame
+
+    // ------------------------------------------------------------------
+    // DESTRUCTOR
+    void OnDisable()
+    {
+        fluid_simulater.Release();
+        resources.Release();
+    }
+
+    // ------------------------------------------------------------------
+    // LOOP
     void Update()
     {
-        
+        fluid_simulater.Tick(Time.deltaTime);
     }
 
 
