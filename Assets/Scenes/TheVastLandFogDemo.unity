@@ -137,6 +137,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -3023932746356223677, guid: f0c1c4867df841b46901bd60ef0f3012,
+        type: 3}
+      propertyPath: m_TagString
+      value: FluidObstcles
+      objectReference: {fileID: 0}
     - target: {fileID: -4216859302048453862, guid: f0c1c4867df841b46901bd60ef0f3012,
         type: 3}
       propertyPath: m_LocalPosition.x

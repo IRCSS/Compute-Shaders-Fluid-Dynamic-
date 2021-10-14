@@ -586,6 +586,58 @@ public class FluidSimulater
 
     }
 
+    public void UpdateArbitaryBoundaryOffsets(RenderTexture boundaryTexture, FluidGPUResources resource_instance)
+    {
+        // CHECKS
+        if(!boundaryTexture)
+        {
+            Debug.LogError("No valid texture was provided as boundary for the update arbitary boundery method.");
+            return;
+        }
+
+        if(boundaryTexture.width != boundaryTexture.height)
+        {
+            Debug.LogError("The provided boundary texture to Update Abitrary Boundary Offset is not valid, it is non quardatic texture");
+            return;
+        }
+        // -------------
+
+        using_arbitary_boundary = true;
+
+        BorderShader.SetTexture(_handle_update_arbitary_boundary_offset, "_arbitary_boundaries_texture", boundaryTexture);
+        BorderShader.SetInt    ("i_Resolution", (int)simulation_dimension);
+        BorderShader.SetFloat  ("_arbitary_boundaries_texel_size",  1.0f / ((float)boundaryTexture.width));
+
+        // Velocity
+        // ----------
+
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_arbitaryBoundaryCardinalDirectionsLUT", resource_instance.cardinal_diections_LUT_Velocity);
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_perCellArbitaryBoundryOffsets",         resource_instance.boundary_velocity_offset_buffer);
+
+        DispatchDimensions group_nums = ComputeShaderUtility.CheckGetDispatchDimensions(BorderShader,
+                            _handle_update_arbitary_boundary_offset, simulation_dimension, simulation_dimension, 1);
+        BorderShader.Dispatch(_handle_update_arbitary_boundary_offset,
+            (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
+
+        // Pressure
+        // ----------
+
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_arbitaryBoundaryCardinalDirectionsLUT", resource_instance.cardinal_diections_LUT_Presure );
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_perCellArbitaryBoundryOffsets",         resource_instance.boundary_pressure_offset_buffer);
+
+        BorderShader.Dispatch(_handle_update_arbitary_boundary_offset,
+            (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
+
+        // Dye
+        // ----------
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_arbitaryBoundaryCardinalDirectionsLUT", resource_instance.cardinal_diections_LUT_Dye);
+        BorderShader.SetBuffer(_handle_update_arbitary_boundary_offset, "_perCellArbitaryBoundryOffsets",         resource_instance.boundary_dye_offset_buffer);
+
+        BorderShader.Dispatch(_handle_update_arbitary_boundary_offset,
+            (int)group_nums.dispatch_x, (int)group_nums.dispatch_y, (int)group_nums.dispatch_z);
+
+    }
+
     public void HandleArbitaryBoundary(ComputeBuffer SetBoundaryOn, ComputeBuffer offsetBuffer, FieldType fieldType)
     {
         if (!IsValid()) return;
