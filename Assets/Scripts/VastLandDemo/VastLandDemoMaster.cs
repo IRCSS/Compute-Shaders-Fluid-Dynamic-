@@ -49,9 +49,9 @@ public class VastLandDemoMaster : MonoBehaviour
     private Camera            main_cam;
     private RenderTexture     fogBuffer;
     private GameObject        fogCollider;
+    private Matrix4x4         worldToSimulationCameraMatrix;
 
-    
-    
+
     // ------------------------------------------------------------------
     // INITALISATION
     void Start()
@@ -125,9 +125,22 @@ public class VastLandDemoMaster : MonoBehaviour
 
 
         //--------------------------------------------
+        ForceStreams[] forceStreams =  GameObject.FindObjectsOfType<ForceStreams>();
+        FogStreams[]     fogStreams =  GameObject.FindObjectsOfType<FogStreams>();
+
+        //--------------------------------------------
 
 
         fluid_simulater.AddUserForce           (resources.velocity_buffer                                   );
+        foreach(ForceStreams f in forceStreams)
+        {
+            Vector3 forcePosition  = WorldToSimulationSpace( f.gameObject.transform.position, true );
+            Vector2 forceDirection = WorldToSimulationSpace(f.gameObject.transform.position + f.gameObject.transform.forward *5.0f,  true) - forcePosition;
+            
+            print("force direction: " + forceDirection);
+            fluid_simulater.AddConstantForceSource(resources.velocity_buffer, forcePosition, forceDirection.normalized, f.forceStrengh, f.radius, f.fallOff);
+        }
+
         fluid_simulater.HandleCornerBoundaries (resources.velocity_buffer, FieldType.Velocity               );
         fluid_simulater.HandleArbitaryBoundary(resources.velocity_buffer, resources.boundary_velocity_offset_buffer, FieldType.Velocity);
         fluid_simulater.Diffuse                (resources.velocity_buffer                                   );
@@ -142,6 +155,11 @@ public class VastLandDemoMaster : MonoBehaviour
 
 
         fluid_simulater.AddDye                 (resources.dye_buffer                                        );
+        foreach(FogStreams f in fogStreams)
+        {
+            Vector3 fogPosition = WorldToSimulationSpace(f.transform.position, true);
+            fluid_simulater.AddConstantDyeSource(resources.dye_buffer, fogPosition);
+        }
         fluid_simulater.Advect                 (resources.dye_buffer, resources.velocity_buffer, 0.992f);
         fluid_simulater.HandleCornerBoundaries (resources.dye_buffer, FieldType.Dye                         );
         fluid_simulater.HandleArbitaryBoundary(resources.dye_buffer, resources.boundary_dye_offset_buffer, FieldType.Dye);
@@ -178,6 +196,16 @@ public class VastLandDemoMaster : MonoBehaviour
     // ---------------------------------------------
     // HELPER FUNCTIONS
 
+    Vector3 WorldToSimulationSpace(Vector3 toTransform, bool isPosition)
+    {
+        Vector3 v = worldToSimulationCameraMatrix * new Vector4(toTransform.x, toTransform.y, toTransform.z, isPosition ? 1.0f : 0.0f);  // the matrix is constructed when the Construct Top down Ortho Matrix is called, which is in the depth map and mask creation phase, make sure that is called first
+
+        v = new Vector3(v.x * 0.5f + 0.5f, v.y * 0.5f + 0.5f, v.z * 0.5f + 0.5f);
+        v = new Vector3(Mathf.Clamp01(v.x), Mathf.Clamp01(v.y), Mathf.Clamp01(v.z));
+        if (isPosition) v = new Vector3(v.x * fluid_simulater.simulation_dimension, v.y * fluid_simulater.simulation_dimension, v.z);
+        
+        return v;
+    }
 
     Matrix4x4 ConstructTopDownOrthoCameraMatrix(SimulationDomainIndicator domainIndicator, Vector3 globalMin, Vector3 globalMax)
     {
@@ -206,9 +234,9 @@ public class VastLandDemoMaster : MonoBehaviour
 
 
         Matrix4x4 permutationMatrix = new Matrix4x4(new Vector4(    0.0f,    0.0f,    1.0f, 0.0f),
-                                                    new Vector4(    0.0f,    1.0f,    0.0f, 0.0f),
                                                     new Vector4(    1.0f,    0.0f,    0.0f, 0.0f),
-                                                    new Vector4(    0.0f,    0.0f,    0.0f, 1.0f));
+                                                    new Vector4(    0.0f,    1.0f,    0.0f, 0.0f),
+                                                    new Vector4(    0.0f,    0.0f,    0.0f, 1.0f)); 
 
 
 
@@ -272,7 +300,7 @@ public class VastLandDemoMaster : MonoBehaviour
         }
 
 
-        Matrix4x4 cameraMatrix = ConstructTopDownOrthoCameraMatrix(corners, globalMin, globalMax);
+         worldToSimulationCameraMatrix = ConstructTopDownOrthoCameraMatrix(corners, globalMin, globalMax);
         
 
         Material constructObstcleDepth = new Material(Shader.Find("Unlit/ObstclesDepthMap"));
@@ -286,7 +314,7 @@ public class VastLandDemoMaster : MonoBehaviour
             MeshFilter mf = gb.GetComponent<MeshFilter>();
             Mesh meshToRender = mf.sharedMesh;
 
-            Matrix4x4 MVP = cameraMatrix * gb.transform.localToWorldMatrix;
+            Matrix4x4 MVP = worldToSimulationCameraMatrix * gb.transform.localToWorldMatrix;
         
             Shader.SetGlobalMatrix("Obstcle_MVP", MVP);
 
@@ -299,7 +327,7 @@ public class VastLandDemoMaster : MonoBehaviour
         temp.Create();
 
         Vector3 halfPoint = corners.leftBottom.position + (corners.rightUp.position - corners.leftBottom.position) * 0.5f; // find mid point (A+B)/2
-        halfPoint = cameraMatrix * new Vector4(halfPoint.x, halfPoint.y, halfPoint.z, 1.0f);
+        halfPoint = worldToSimulationCameraMatrix * new Vector4(halfPoint.x, halfPoint.y, halfPoint.z, 1.0f);
 
         Graphics.Blit(target, temp);
 

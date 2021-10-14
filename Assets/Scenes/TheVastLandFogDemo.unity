@@ -199,6 +199,66 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f0c1c4867df841b46901bd60ef0f3012, type: 3}
+--- !u!1 &434256091
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 434256094}
+  - component: {fileID: 434256093}
+  - component: {fileID: 434256092}
+  m_Layer: 0
+  m_Name: FogStream
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &434256092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434256091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1085a1816a47cf04b982379331a5a1c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  forceStrengh: 50
+  radius: 5
+  fallOff: 7
+--- !u!114 &434256093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434256091}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23c735a58e1a3234b98f70a731de9317, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fogRate: 10
+--- !u!4 &434256094
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 434256091}
+  m_LocalRotation: {x: -0, y: 0.8838976, z: -0, w: 0.4676805}
+  m_LocalPosition: {x: -4.18, y: 1.35, z: 1.35}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 124.232, z: 0}
 --- !u!1 &562174374
 GameObject:
   m_ObjectHideFlags: 0
@@ -289,6 +349,7 @@ MonoBehaviour:
     rightBottom: {fileID: 562174375}
     rightUp: {fileID: 1727556886}
     leftUp: {fileID: 1507287599}
+  obstcleMap: {fileID: 0}
 --- !u!4 &764844961
 Transform:
   m_ObjectHideFlags: 0
