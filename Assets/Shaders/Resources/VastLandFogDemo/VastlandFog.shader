@@ -48,7 +48,6 @@
             fixed4 frag (v2f i) : SV_Target
             {
                 fixed4 col = tex2D(_fogBuffer, i.uv);
-
             col = float4(_fogColor.xyz, saturate(col.r* StackDepth) * _fogColor.a);
                 return col;
             }

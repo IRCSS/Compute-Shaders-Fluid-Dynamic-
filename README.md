@@ -8,6 +8,10 @@ You can read the full explaination of the technique on my blog: [Gentle Introduc
 
 ![screenshot](documentation/FluidSimulationGif.gif)
 
+The Second demo scene is The Vast Land, where I use the fluid simulation for stylized fog. You can read the break down of that on my blog: [Interactive Volumetric Fog With Fluid Dynamics and Arbitrary Boundaries](interactive-volumetric-fog-with-fluid-dynamics-and-arbitrary-boundaries-f82fdee86397)
+
+![screenshot](documentation/VastLandDemoAnimation.gif)
+
 --------------------------
 
 To get started with the repo, select any of the 3 demo scenes, under Assets/Scenes. The three scenes are:

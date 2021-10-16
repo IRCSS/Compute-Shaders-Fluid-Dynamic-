@@ -42,7 +42,7 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float2 uv = i.uv.xy;  // mapping from the texture to the compute shader space
+                float2 uv = i.uv.xy;  
                 uv.y = 1. - uv.y;     // mapping from the texture to the compute shader space  
 
                 float c = tex2D(_ObstcleDepthMap, uv).x;
