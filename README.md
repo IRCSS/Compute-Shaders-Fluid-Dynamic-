@@ -3,6 +3,7 @@ Fluid Simulation Implemented in Compute shaders in Unity 3D
 This repo contains code for a fluid simulation pipeline implmented in Compute shaders. The code has been tested on Unity 2019.1.14f1 Windows DX11, with the Legacy renderer. 
 
 You can read the full explaination of the technique on my blog: [Gentle Introduction to Fluid Simulation for Programmers and Technical Artists](https://medium.com/@shahriyarshahrabi/gentle-introduction-to-fluid-simulation-for-programmers-and-technical-artists-7c0045c40bac)
+The mesh used here is also modled/ textured by me, which you can download for free [here](https://skfb.ly/6XZx7). 
 
 
 
@@ -42,4 +43,23 @@ For more information, read through the Fluid Simulator class, most things are co
 
 Fluid Engine: Adding New Things and Architecture
 =================
+
+If you wish to expand on the code (add new solver for example), you would need some explaination regarding how the setup works. Here are the steps for example to add a new kernel, and write a function for the pipeline to use it. 
+![Add New Kernels](documentation/AddNewKernel.jpg)
+1. Write the kernel in a compute shader file (for a new solver for example, you can do it under solvers)
+2. You need to save the handle for that kernel in the **Fluid Simulator** class, you can see in the image above (section one and two), where you declare a parameter to hold the kernel index and using the **ComputeShaderUtility.GetKernelHandle** function to get these values from the shaders. Make sure to use this method, since I have an intenral refelection system to help with dispatching and error handling.
+3. Any resources you might need, you need to declare and initialize/ deinitialize in the **FluidGPUResources** class.    
+4. Whatever paramters you need to set once and wont change, set in the **FluidSimulator** Initialize funciton. You can add the things that change in the Tick, and things that need to be set before the kernel is called, in the function that dispatches the kernel.
+5. Finally you can dispatch the kernel, more or less in the same way I dispatch mine, you can look at the body of the function **Advect** for example:
+![Code for Advect](documentation/AdvectCode.jpg)
+You have the following utility functions which you should use: 
+**IsValid()**: Checks whether important stuff have been initialize and throws an appropriate error if not, call this at the begining of your function and return if not valid
+**DispatchComputeOnCommandBuffer()**: You should dispatch your compute shaders with this function, it uses the reflection system I mentioned before to check if the dimension you want to have for your thred groups makes sense. 
+
+
+Improving Performance
+=================
+If you are having performance issues, you can reduce the simulation dimension or reduce the iteration number for your solver, or call the project function less times. 
+The biggest gain regarding performance would be to implement another solver, Gauss seidel, SOR or Multigrid. On top of that I have some buffers double, and I am not using group shared for the solvers and other things that are accessed in batch (gradient, divergent function etc). Either switch the structured buffers to texture to utilize the texture cache, or implement the group shared. 
+
 
